@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
-use entities::recipe_users::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use entities::recipe_users::{ActiveModel, Column, Entity, Model, Relation};
+use sea_orm::{
+    sea_query::{Alias, Expr},
+    *,
+};
 use uuid::Uuid;
 
 use crate::DBClient;
@@ -91,5 +94,44 @@ impl DatabaseCRUD for DBClient {
             .exec(&self.database_connection)
             .await
             .map(|_| ())
+    }
+}
+
+#[derive(FromQueryResult, Debug)]
+pub struct RecipeUsersResponse {
+    pub id: Uuid,
+    pub recipe_id: Uuid,
+    pub recipe_name: String,
+    pub cooking_time_mins: Option<i32>,
+    pub link: Option<String>,
+    pub instructions: Option<String>,
+}
+
+#[async_trait]
+pub trait DatabaseExtra {
+    async fn get_recipes_of_user(&self, user_id: Uuid) -> Result<Vec<RecipeUsersResponse>, DbErr>;
+}
+
+#[async_trait]
+impl DatabaseExtra for DBClient {
+    async fn get_recipes_of_user(&self, user_id: Uuid) -> Result<Vec<RecipeUsersResponse>, DbErr> {
+        Entity::find()
+            .select_only()
+            .columns([Column::Id, Column::RecipeId])
+            .columns([
+                entities::recipes::Column::CookingTimeMins,
+                entities::recipes::Column::Link,
+                entities::recipes::Column::Instructions,
+            ])
+            .column_as(
+                Expr::col((Alias::new("recipes"), entities::recipes::Column::Name)),
+                "recipe_name",
+            )
+            .join(JoinType::InnerJoin, Relation::Recipes.def())
+            .filter(Column::UserId.eq(user_id))
+            .into_model::<RecipeUsersResponse>()
+            .all(&self.database_connection)
+            .await
+            .map(|x| x.into_iter().map(Into::into).collect())
     }
 }

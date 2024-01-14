@@ -22,7 +22,8 @@ impl MigrationTrait for Migration {
                     .col(
                         ColumnDef::new(Ingredients::CreatedAt)
                             .timestamp()
-                            .not_null(),
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .to_owned(),
             )
@@ -33,8 +34,18 @@ impl MigrationTrait for Migration {
                     .table(Users::Table)
                     .col(ColumnDef::new(Users::Id).uuid().primary_key())
                     .col(ColumnDef::new(Users::Name).string().not_null())
-                    .col(ColumnDef::new(Users::CreatedAt).timestamp().not_null())
-                    .col(ColumnDef::new(Users::UpdatedAt).timestamp().not_null())
+                    .col(
+                        ColumnDef::new(Users::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(Users::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -57,12 +68,14 @@ impl MigrationTrait for Migration {
                     .col(
                         ColumnDef::new(PantryItems::CreatedAt)
                             .timestamp()
-                            .not_null(),
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(PantryItems::UpdatedAt)
                             .timestamp()
-                            .not_null(),
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -94,8 +107,18 @@ impl MigrationTrait for Migration {
                     // .col(ColumnDef::new(Recipes::CookingTime).interval(None, None))
                     .col(ColumnDef::new(Recipes::Link).string())
                     .col(ColumnDef::new(Recipes::Instructions).text())
-                    .col(ColumnDef::new(Recipes::CreatedAt).timestamp().not_null())
-                    .col(ColumnDef::new(Recipes::UpdatedAt).timestamp().not_null())
+                    .col(
+                        ColumnDef::new(Recipes::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .col(
+                        ColumnDef::new(Recipes::UpdatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
                     .to_owned(),
             )
             .await?;
@@ -130,12 +153,14 @@ impl MigrationTrait for Migration {
                     .col(
                         ColumnDef::new(RecipeIngredients::CreatedAt)
                             .timestamp()
-                            .not_null(),
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .col(
                         ColumnDef::new(RecipeIngredients::UpdatedAt)
                             .timestamp()
-                            .not_null(),
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -167,7 +192,8 @@ impl MigrationTrait for Migration {
                     .col(
                         ColumnDef::new(RecipeUsers::CreatedAt)
                             .timestamp()
-                            .not_null(),
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -277,7 +303,7 @@ pub enum Recipes {
     Name,
     CookingTimeMins,
     Link,
-    Instructions, // Equipment
+    Instructions, // Equipment, Tags (Breakfast, Lunch, Soup, Baking..)
     CreatedAt,
     UpdatedAt,
 }
