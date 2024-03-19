@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use chrono::NaiveDateTime;
 use entities::recipe_users::{ActiveModel, Column, Entity, Model, Relation};
 use sea_orm::{
     sea_query::{Alias, Expr},
@@ -7,93 +6,93 @@ use sea_orm::{
 };
 use uuid::Uuid;
 
-use crate::DBClient;
-
-pub struct Request {
-    pub id: Uuid,
-    pub recipe_id: Uuid,
-    pub user_id: Uuid,
-    pub created_at: NaiveDateTime,
-}
-
-pub struct Response {
-    pub id: Uuid,
-    pub recipe_id: Uuid,
-    pub user_id: Uuid,
-    pub created_at: NaiveDateTime,
-}
-
-impl From<Request> for Model {
-    // TODO: make this a macro
-    fn from(value: Request) -> Self {
-        Model {
-            id: value.id,
-            recipe_id: value.recipe_id,
-            user_id: value.user_id,
-            created_at: value.created_at,
-        }
-    }
-}
-
-impl From<Model> for Response {
-    fn from(value: Model) -> Self {
-        Response {
-            id: value.id,
-            recipe_id: value.recipe_id,
-            user_id: value.user_id,
-            created_at: value.created_at,
-        }
-    }
-}
+use crate::{
+    errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
+    DBClient,
+};
 
 #[async_trait]
 pub trait DatabaseCRUD {
-    async fn create_recipe_user(&self, request: Request) -> Result<Response, DbErr>;
-    async fn get_recipe_user(&self, id: Uuid) -> Result<Option<Response>, DbErr>;
-    async fn list_recipe_users(&self) -> Result<Vec<Response>, DbErr>;
-    async fn update_recipe_user(&self, id: Uuid, request: Request) -> Result<Response, DbErr>;
-    async fn delete_recipe_user(&self, id: Uuid) -> Result<(), DbErr>;
+    async fn create_recipe_user(&self, request: Model) -> Result<Model, CreateError>;
+    async fn get_recipe_user(&self, id: Uuid) -> Result<Model, GetError>;
+    async fn list_recipe_users(&self) -> Result<Vec<Model>, ListError>;
+    async fn update_recipe_user(
+        &self,
+        id: Uuid,
+        request: ActiveModel,
+    ) -> Result<Model, UpdateError>;
+    async fn delete_recipe_user(&self, id: Uuid) -> Result<(), DeleteError>;
 }
 
 #[async_trait]
 impl DatabaseCRUD for DBClient {
-    async fn create_recipe_user(&self, request: Request) -> Result<Response, DbErr> {
-        let model: Model = request.into();
-        let active_model: ActiveModel = model.into();
+    async fn create_recipe_user(&self, request: Model) -> Result<Model, CreateError> {
+        let id = request.id;
+        let active_model: ActiveModel = request.into();
         active_model
             .insert(&self.database_connection)
             .await
-            .map(Into::into)
+            .map_err(|err| {
+                if let DbErr::RecordNotInserted = err {
+                    CreateError::AlreadyExist { id }
+                } else {
+                    CreateError::Unexpected { error: err.into() }
+                }
+            })
     }
-    async fn get_recipe_user(&self, id: Uuid) -> Result<Option<Response>, DbErr> {
+    async fn get_recipe_user(&self, id: Uuid) -> Result<Model, GetError> {
         Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
-            .map(|x| x.map(Into::into))
+            .map_err(|err| GetError::Unexpected {
+                id,
+                error: err.into(),
+            })?
+            .ok_or(GetError::NotFound { id })
     }
-    async fn list_recipe_users(&self) -> Result<Vec<Response>, DbErr> {
+    async fn list_recipe_users(&self) -> Result<Vec<Model>, ListError> {
         Entity::find()
             .order_by_desc(Column::CreatedAt)
             .order_by_desc(Column::Id)
             .all(&self.database_connection)
             .await
-            .map(|x| x.into_iter().map(Into::into).collect())
+            .map_err(|err| ListError::Unexpected { error: err.into() })
     }
-    async fn update_recipe_user(&self, id: Uuid, request: Request) -> Result<Response, DbErr> {
-        let model: Model = request.into();
-        let active_model: ActiveModel = model.into();
-
-        Entity::update(active_model)
+    async fn update_recipe_user(
+        &self,
+        id: Uuid,
+        request: ActiveModel,
+    ) -> Result<Model, UpdateError> {
+        Entity::update(request)
             .filter(Column::Id.eq(id))
             .exec(&self.database_connection)
             .await
-            .map(Into::into)
+            .map_err(|err| {
+                if let DbErr::RecordNotUpdated = err {
+                    UpdateError::NotFound { id }
+                } else {
+                    UpdateError::Unexpected {
+                        id,
+                        error: err.into(),
+                    }
+                }
+            })
     }
-    async fn delete_recipe_user(&self, id: Uuid) -> Result<(), DbErr> {
-        Entity::delete_by_id(id)
+    async fn delete_recipe_user(&self, id: Uuid) -> Result<(), DeleteError> {
+        if Entity::delete_by_id(id)
             .exec(&self.database_connection)
             .await
-            .map(|_| ())
+            .map_err(|err| DeleteError::Unexpected {
+                id,
+                error: err.into(),
+            })?
+            .rows_affected
+            == 0
+        {
+            Err(DeleteError::NotFound { id })
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -109,12 +108,18 @@ pub struct RecipeUsersResponse {
 
 #[async_trait]
 pub trait DatabaseExtra {
-    async fn get_recipes_of_user(&self, user_id: Uuid) -> Result<Vec<RecipeUsersResponse>, DbErr>;
+    async fn get_recipes_of_user(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<RecipeUsersResponse>, ListError>;
 }
 
 #[async_trait]
 impl DatabaseExtra for DBClient {
-    async fn get_recipes_of_user(&self, user_id: Uuid) -> Result<Vec<RecipeUsersResponse>, DbErr> {
+    async fn get_recipes_of_user(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<RecipeUsersResponse>, ListError> {
         Entity::find()
             .select_only()
             .columns([Column::Id, Column::RecipeId])
@@ -132,6 +137,6 @@ impl DatabaseExtra for DBClient {
             .into_model::<RecipeUsersResponse>()
             .all(&self.database_connection)
             .await
-            .map(|x| x.into_iter().map(Into::into).collect())
+            .map_err(|err| ListError::Unexpected { error: err.into() })
     }
 }
