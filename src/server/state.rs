@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::routes::DaoTrait;
+use crate::dao::DaoTrait;
 
 #[derive(Clone)]
 pub struct AppState {

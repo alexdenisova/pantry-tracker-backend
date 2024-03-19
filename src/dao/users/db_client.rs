@@ -1,6 +1,6 @@
 use super::dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
+use super::DaoTrait;
 use crate::dao::db_client::DatabaseClient;
-use crate::server::routes::users::state::DaoTrait;
 use axum::async_trait;
 use chrono::Utc;
 use database::errors::{CreateError, DeleteError, GetError, ListError, UpdateError};

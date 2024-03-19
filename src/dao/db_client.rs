@@ -3,7 +3,7 @@ use database::{errors::HealthcheckError, DBClient, DBTrait};
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
 
-use crate::server::routes::DatabaseHealth;
+use super::DatabaseHealth;
 
 pub struct DatabaseClient {
     pub client: Arc<dyn DBTrait + Send + Sync>,
@@ -25,4 +25,4 @@ impl DatabaseHealth for DatabaseClient {
     }
 }
 
-impl crate::server::routes::DaoTrait for DatabaseClient {}
+impl super::DaoTrait for DatabaseClient {}

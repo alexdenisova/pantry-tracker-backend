@@ -11,7 +11,6 @@ use database::errors::{CreateError, DeleteError, GetError, UpdateError};
 use uuid::Uuid;
 
 mod payload;
-pub mod state;
 
 pub struct UserRouter {}
 
