@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use database::errors::{CreateError, DeleteError, GetError, ListError, UpdateError};
 
-use crate::dao::users::dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
+use dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
 
 #[async_trait]
 pub trait DaoTrait {
