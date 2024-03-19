@@ -11,10 +11,25 @@ path = "src/main.rs"
 members = [".", "./crates/migrations", "./crates/entities", "./crates/database"]
 
 [dependencies]
-sea-orm = { version = "^0.12.0", features = ["sqlx-postgres", "runtime-async-std-native-tls", "macros"] }
+sea-orm = { version = "^0.12.0", features = [
+  "sqlx-postgres",
+  "runtime-async-std-native-tls",
+  "macros",
+] }
 sea-orm-migration = { version = "^0.12.0" }
+async-trait = "0.1.77"
 futures = "0.3.28"
 migrations = { path = "./crates/migrations" }
 database = { path = "./crates/database" }
+entities = { path = "./crates/entities" }
 uuid = { version = "1.6.1", features = ["v4"] }
 chrono = "0.4.31"
+serde = "1.0.197"
+color-eyre = "0.6.3"
+thiserror = "1.0.58"
+log = "0.4.21"
+tokio = { version = "1.36.0", features = ["full"] }
+axum = "0.7.4"
+clap = { version = "4.5.3", features = ["env", "derive"] }
+fern = { version = "0.6.2", features = ["colored"] }
+dotenvy = "0.15.7"
