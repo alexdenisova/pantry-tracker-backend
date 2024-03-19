@@ -7,6 +7,7 @@ pub use state::AppState;
 use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
 
+use self::routes::ingredients::IngredientRouter;
 use self::routes::users::UserRouter;
 
 pub type ServerResult<T> = Result<T, ServerError>;
@@ -38,6 +39,7 @@ impl Server {
 
         let router: Router = Router::new()
             .route("/health", get(health))
+            .nest("/ingredients", IngredientRouter::get())
             .nest("/users", UserRouter::get())
             .with_state(self.state)
             .fallback(Server::fallback);

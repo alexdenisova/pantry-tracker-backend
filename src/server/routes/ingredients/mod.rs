@@ -4,7 +4,9 @@ use axum::{
     routing::get,
     Router,
 };
-use payload::{CreatePayload, ListQueryParams, UpdatePayload, UserResponse, UsersListResponse};
+use payload::{
+    CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams, UpdatePayload,
+};
 
 use crate::server::state::AppState;
 use database::errors::{CreateError, DeleteError, GetError, UpdateError};
@@ -12,31 +14,31 @@ use uuid::Uuid;
 
 mod payload;
 
-pub struct UserRouter {}
+pub struct IngredientRouter {}
 
-impl UserRouter {
+impl IngredientRouter {
     pub fn get() -> Router<AppState> {
         Router::new()
             .route(
                 "/",
-                get(UserRouter::list_users).post(UserRouter::create_user),
+                get(IngredientRouter::list_ingredients).post(IngredientRouter::create_ingredient),
             )
             .route(
                 "/:id",
-                get(UserRouter::get_user)
-                    .put(UserRouter::update_user)
-                    .delete(UserRouter::delete_user),
+                get(IngredientRouter::get_ingredient)
+                    .put(IngredientRouter::update_ingredient)
+                    .delete(IngredientRouter::delete_ingredient),
             )
     }
 
-    async fn create_user(
+    async fn create_ingredient(
         State(state): State<AppState>,
         Json(payload): Json<CreatePayload>,
-    ) -> (StatusCode, Json<Option<UserResponse>>) {
-        match state.dao.create_user(payload.into()).await {
-            Ok(user) => {
-                log::info!("User with id {:?} created", user.id.to_string());
-                (StatusCode::CREATED, Json(Some(user.into())))
+    ) -> (StatusCode, Json<Option<IngredientResponse>>) {
+        match state.dao.create_ingredient(payload.into()).await {
+            Ok(ingredient) => {
+                log::info!("Ingredient with id {:?} created", ingredient.id.to_string());
+                (StatusCode::CREATED, Json(Some(ingredient.into())))
             }
             Err(err) => {
                 if let CreateError::AlreadyExist { .. } = err {
@@ -50,14 +52,14 @@ impl UserRouter {
         }
     }
 
-    async fn list_users(
+    async fn list_ingredients(
         State(state): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
-    ) -> (StatusCode, Json<Option<UsersListResponse>>) {
-        match state.dao.list_users(query_params.into()).await {
-            Ok(users) => {
-                log::info!("{:?} users collected", users.items.len());
-                (StatusCode::OK, Json(Some(users.into())))
+    ) -> (StatusCode, Json<Option<IngredientListResponse>>) {
+        match state.dao.list_ingredients(query_params.into()).await {
+            Ok(ingredients) => {
+                log::info!("{:?} ingredients collected", ingredients.items.len());
+                (StatusCode::OK, Json(Some(ingredients.into())))
             }
             Err(err) => {
                 log::error!("{}", err.to_string());
@@ -66,14 +68,14 @@ impl UserRouter {
         }
     }
 
-    async fn get_user(
+    async fn get_ingredient(
         State(state): State<AppState>,
         Path(id): Path<Uuid>,
-    ) -> (StatusCode, Json<Option<UserResponse>>) {
-        match state.dao.get_user(id).await {
-            Ok(user) => {
-                log::info!("Got user with id {:?}", user.id);
-                (StatusCode::OK, Json(Some(user.into())))
+    ) -> (StatusCode, Json<Option<IngredientResponse>>) {
+        match state.dao.get_ingredient(id).await {
+            Ok(ingredient) => {
+                log::info!("Got ingredient with id {:?}", ingredient.id);
+                (StatusCode::OK, Json(Some(ingredient.into())))
             }
             Err(err) => {
                 if let GetError::NotFound { .. } = err {
@@ -87,15 +89,15 @@ impl UserRouter {
         }
     }
 
-    async fn update_user(
+    async fn update_ingredient(
         State(state): State<AppState>,
         Path(id): Path<Uuid>,
         Json(payload): Json<UpdatePayload>,
-    ) -> (StatusCode, Json<Option<UserResponse>>) {
-        match state.dao.update_user(id, payload.into()).await {
-            Ok(user) => {
-                log::info!("Updated user with id {id:?}");
-                (StatusCode::OK, Json(Some(user.into())))
+    ) -> (StatusCode, Json<Option<IngredientResponse>>) {
+        match state.dao.update_ingredient(id, payload.into()).await {
+            Ok(ingredient) => {
+                log::info!("Updated ingredient with id {id:?}");
+                (StatusCode::OK, Json(Some(ingredient.into())))
             }
             Err(err) => {
                 if let UpdateError::NotFound { .. } = err {
@@ -109,10 +111,10 @@ impl UserRouter {
         }
     }
 
-    async fn delete_user(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
-        match state.dao.delete_user(id).await {
+    async fn delete_ingredient(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
+        match state.dao.delete_ingredient(id).await {
             Ok(()) => {
-                log::info!("Deleted user with id {:?}", id);
+                log::info!("Deleted ingredient with id {:?}", id);
                 StatusCode::NO_CONTENT
             }
             Err(err) => {

@@ -10,12 +10,12 @@ use uuid::Uuid;
 
 #[async_trait]
 impl DaoTrait for DatabaseClient {
-    async fn create(&self, payload: CreateDto) -> Result<UserDto, CreateError> {
+    async fn create_user(&self, payload: CreateDto) -> Result<UserDto, CreateError> {
         let model: Model = payload.into();
         self.client.create_user(model).await.map(Into::into)
     }
 
-    async fn list(&self, params: ListParamsDto) -> Result<UsersListDto, ListError> {
+    async fn list_users(&self, params: ListParamsDto) -> Result<UsersListDto, ListError> {
         let users = self
             .client
             .list_users(params.predicate)
@@ -27,11 +27,11 @@ impl DaoTrait for DatabaseClient {
         Ok(UsersListDto { items: users })
     }
 
-    async fn get(&self, id: Uuid) -> Result<UserDto, GetError> {
+    async fn get_user(&self, id: Uuid) -> Result<UserDto, GetError> {
         self.client.get_user(id).await.map(Into::into)
     }
 
-    async fn update(&self, id: Uuid, payload: UpdateDto) -> Result<UserDto, UpdateError> {
+    async fn update_user(&self, id: Uuid, payload: UpdateDto) -> Result<UserDto, UpdateError> {
         let active_model: ActiveModel = ActiveModel {
             id: ActiveValue::Set(id),
             name: ActiveValue::Set(payload.name),
@@ -44,7 +44,7 @@ impl DaoTrait for DatabaseClient {
             .map(Into::into)
     }
 
-    async fn delete(&self, id: Uuid) -> Result<(), DeleteError> {
+    async fn delete_user(&self, id: Uuid) -> Result<(), DeleteError> {
         self.client.delete_user(id).await
     }
 }
