@@ -1,5 +1,5 @@
 use chrono::{NaiveDateTime, Utc};
-use entities::users::Model;
+use db_entities::users::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -32,26 +32,25 @@ pub struct UsersListDto {
 }
 
 impl From<CreateDto> for Model {
-  fn from(value: CreateDto) -> Self {
-      let now = Utc::now().naive_utc();
+    fn from(value: CreateDto) -> Self {
+        let now = Utc::now().naive_utc();
 
-      Self {
-          id: Uuid::new_v4(),
-          name: value.name,
-          created_at: now,
-          updated_at: now,
-      }
-  }
+        Self {
+            id: Uuid::new_v4(),
+            name: value.name,
+            created_at: now,
+            updated_at: now,
+        }
+    }
 }
 
 impl From<Model> for UserDto {
-  fn from(value: Model) -> Self {
-      Self {
-          id: value.id,
-          name: value.name,
-          created_at: value.created_at,
-          updated_at: value.updated_at,
-      }
-  }
+    fn from(value: Model) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            created_at: value.created_at,
+            updated_at: value.updated_at,
+        }
+    }
 }
-

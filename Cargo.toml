@@ -8,7 +8,7 @@ name = "app"
 path = "src/main.rs"
 
 [workspace]
-members = [".", "./crates/migrations", "./crates/entities", "./crates/database"]
+members = [".", "./crates/migrations", "./crates/db_entities"]
 
 [dependencies]
 sea-orm = { version = "^0.12.0", features = [
@@ -20,8 +20,7 @@ sea-orm-migration = { version = "^0.12.0" }
 async-trait = "0.1.77"
 futures = "0.3.28"
 migrations = { path = "./crates/migrations" }
-database = { path = "./crates/database" }
-entities = { path = "./crates/entities" }
+db_entities = { path = "./crates/db_entities" }
 uuid = { version = "1.6.1", features = ["v4"] }
 chrono = "0.4.31"
 serde = "1.0.197"

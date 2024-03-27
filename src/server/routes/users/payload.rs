@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::dao::users::dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
+use crate::database::users::dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {

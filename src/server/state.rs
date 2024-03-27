@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
-use crate::dao::DaoTrait;
+use sea_orm::DatabaseConnection;
+
+use crate::database::{DBClient, DBTrait};
 
 #[derive(Clone)]
 pub struct AppState {
-    pub dao: Arc<dyn DaoTrait + Send + Sync>,
+    pub db_client: Arc<dyn DBTrait + Send + Sync>,
 }
 
 impl AppState {
-    pub fn new(database: impl DaoTrait + Send + Sync + 'static) -> Self {
+    pub fn new(connection: DatabaseConnection) -> Self {
+        let client = DBClient::new(connection);
         Self {
-            dao: Arc::new(database),
+            db_client: Arc::new(client),
         }
     }
 }

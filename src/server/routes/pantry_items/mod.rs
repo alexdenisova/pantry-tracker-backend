@@ -4,7 +4,9 @@ use axum::{
     routing::get,
     Router,
 };
-use payload::{CreatePayload, ListQueryParams, UpdatePayload, UserResponse, UsersListResponse};
+use payload::{
+    CreatePayload, PantryItemListResponse, PantryItemResponse, ListQueryParams, UpdatePayload,
+};
 
 use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
 use crate::server::state::AppState;
@@ -12,31 +14,31 @@ use uuid::Uuid;
 
 mod payload;
 
-pub struct UserRouter {}
+pub struct PantryItemRouter {}
 
-impl UserRouter {
+impl PantryItemRouter {
     pub fn get() -> Router<AppState> {
         Router::new()
             .route(
                 "/",
-                get(UserRouter::list_users).post(UserRouter::create_user),
+                get(PantryItemRouter::list_pantry_items).post(PantryItemRouter::create_pantry_item),
             )
             .route(
                 "/:id",
-                get(UserRouter::get_user)
-                    .put(UserRouter::update_user)
-                    .delete(UserRouter::delete_user),
+                get(PantryItemRouter::get_pantry_item)
+                    .put(PantryItemRouter::update_pantry_item)
+                    .delete(PantryItemRouter::delete_pantry_item),
             )
     }
 
-    async fn create_user(
+    async fn create_pantry_item(
         State(state): State<AppState>,
         Json(payload): Json<CreatePayload>,
-    ) -> (StatusCode, Json<Option<UserResponse>>) {
-        match state.db_client.create_user(payload.into()).await {
-            Ok(user) => {
-                log::info!("User with id {:?} created", user.id.to_string());
-                (StatusCode::CREATED, Json(Some(user.into())))
+    ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
+        match state.db_client.create_pantry_item(payload.into()).await {
+            Ok(pantry_item) => {
+                log::info!("PantryItem with id {:?} created", pantry_item.id.to_string());
+                (StatusCode::CREATED, Json(Some(pantry_item.into())))
             }
             Err(err) => {
                 if let CreateError::AlreadyExist { .. } = err {
@@ -50,14 +52,14 @@ impl UserRouter {
         }
     }
 
-    async fn list_users(
+    async fn list_pantry_items(
         State(state): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
-    ) -> (StatusCode, Json<Option<UsersListResponse>>) {
-        match state.db_client.list_users(query_params.into()).await {
-            Ok(users) => {
-                log::info!("{:?} users collected", users.items.len());
-                (StatusCode::OK, Json(Some(users.into())))
+    ) -> (StatusCode, Json<Option<PantryItemListResponse>>) {
+        match state.db_client.list_pantry_items(query_params.into()).await {
+            Ok(pantry_items) => {
+                log::info!("{:?} pantry_items collected", pantry_items.items.len());
+                (StatusCode::OK, Json(Some(pantry_items.into())))
             }
             Err(err) => {
                 log::error!("{}", err.to_string());
@@ -66,14 +68,14 @@ impl UserRouter {
         }
     }
 
-    async fn get_user(
+    async fn get_pantry_item(
         State(state): State<AppState>,
         Path(id): Path<Uuid>,
-    ) -> (StatusCode, Json<Option<UserResponse>>) {
-        match state.db_client.get_user(id).await {
-            Ok(user) => {
-                log::info!("Got user with id {:?}", user.id);
-                (StatusCode::OK, Json(Some(user.into())))
+    ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
+        match state.db_client.get_pantry_item(id).await {
+            Ok(pantry_item) => {
+                log::info!("Got pantry_item with id {:?}", pantry_item.id);
+                (StatusCode::OK, Json(Some(pantry_item.into())))
             }
             Err(err) => {
                 if let GetError::NotFound { .. } = err {
@@ -87,15 +89,15 @@ impl UserRouter {
         }
     }
 
-    async fn update_user(
+    async fn update_pantry_item(
         State(state): State<AppState>,
         Path(id): Path<Uuid>,
         Json(payload): Json<UpdatePayload>,
-    ) -> (StatusCode, Json<Option<UserResponse>>) {
-        match state.db_client.update_user(id, payload.into()).await {
-            Ok(user) => {
-                log::info!("Updated user with id {id:?}");
-                (StatusCode::OK, Json(Some(user.into())))
+    ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
+        match state.db_client.update_pantry_item(id, payload.into()).await {
+            Ok(pantry_item) => {
+                log::info!("Updated pantry_item with id {id:?}");
+                (StatusCode::OK, Json(Some(pantry_item.into())))
             }
             Err(err) => {
                 if let UpdateError::NotFound { .. } = err {
@@ -109,10 +111,10 @@ impl UserRouter {
         }
     }
 
-    async fn delete_user(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
-        match state.db_client.delete_user(id).await {
+    async fn delete_pantry_item(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
+        match state.db_client.delete_pantry_item(id).await {
             Ok(()) => {
-                log::info!("Deleted user with id {:?}", id);
+                log::info!("Deleted pantry_item with id {:?}", id);
                 StatusCode::NO_CONTENT
             }
             Err(err) => {

@@ -1,5 +1,5 @@
 [package]
-name = "entities"
+name = "db_entities"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,5 +14,5 @@ sea-orm = { version = "0.12.4", default-features = false, features = [
 ] }
 
 [lib]
-name = "entities"
+name = "db_entities"
 path = "src/lib.rs"

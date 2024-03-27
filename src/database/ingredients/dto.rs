@@ -1,5 +1,5 @@
 use chrono::{NaiveDateTime, Utc};
-use entities::ingredients::Model;
+use db_entities::ingredients::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

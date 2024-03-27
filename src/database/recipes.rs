@@ -1,9 +1,9 @@
 use async_trait::async_trait;
-use entities::recipes::{ActiveModel, Column, Entity, Model};
+use db_entities::recipes::{ActiveModel, Column, Entity, Model};
 use sea_orm::*;
 use uuid::Uuid;
 
-use crate::{
+use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
 };

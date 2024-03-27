@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::dao::ingredients::dto::{
+use crate::database::ingredients::dto::{
     CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto,
 };
 

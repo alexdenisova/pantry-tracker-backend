@@ -45,3 +45,12 @@ pub enum HealthcheckError {
     #[error("Unexpected error during healthcheck: {error}")]
     Unexpected { error: AnyError },
 }
+
+impl From<GetError> for UpdateError {
+    fn from(value: GetError) -> Self {
+        match value {
+            GetError::NotFound { id } => UpdateError::NotFound { id },
+            GetError::Unexpected { id, error } => UpdateError::Unexpected { id, error },
+        }
+    }
+}

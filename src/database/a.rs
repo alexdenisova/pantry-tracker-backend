@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 use chrono::NaiveDate;
-use entities::pantry_items::{ActiveModel, Column, Entity, Model, Relation};
+use db_entities::pantry_items::{ActiveModel, Column, Entity, Model, Relation};
 use sea_orm::{
     sea_query::{Alias, Expr},
     *,
 };
 use uuid::Uuid;
 
-use crate::{
+use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
 };
@@ -145,7 +145,7 @@ impl DatabaseExtra for DBClient {
             .column_as(
                 Expr::col((
                     Alias::new("ingredients"),
-                    entities::ingredients::Column::Name,
+                    db_entities::ingredients::Column::Name,
                 )),
                 "ingredient_name",
             )

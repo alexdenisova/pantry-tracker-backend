@@ -8,8 +8,8 @@ use payload::{
     CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams, UpdatePayload,
 };
 
+use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
 use crate::server::state::AppState;
-use database::errors::{CreateError, DeleteError, GetError, UpdateError};
 use uuid::Uuid;
 
 mod payload;
@@ -35,7 +35,7 @@ impl IngredientRouter {
         State(state): State<AppState>,
         Json(payload): Json<CreatePayload>,
     ) -> (StatusCode, Json<Option<IngredientResponse>>) {
-        match state.dao.create_ingredient(payload.into()).await {
+        match state.db_client.create_ingredient(payload.into()).await {
             Ok(ingredient) => {
                 log::info!("Ingredient with id {:?} created", ingredient.id.to_string());
                 (StatusCode::CREATED, Json(Some(ingredient.into())))
@@ -56,7 +56,7 @@ impl IngredientRouter {
         State(state): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<IngredientListResponse>>) {
-        match state.dao.list_ingredients(query_params.into()).await {
+        match state.db_client.list_ingredients(query_params.into()).await {
             Ok(ingredients) => {
                 log::info!("{:?} ingredients collected", ingredients.items.len());
                 (StatusCode::OK, Json(Some(ingredients.into())))
@@ -72,7 +72,7 @@ impl IngredientRouter {
         State(state): State<AppState>,
         Path(id): Path<Uuid>,
     ) -> (StatusCode, Json<Option<IngredientResponse>>) {
-        match state.dao.get_ingredient(id).await {
+        match state.db_client.get_ingredient(id).await {
             Ok(ingredient) => {
                 log::info!("Got ingredient with id {:?}", ingredient.id);
                 (StatusCode::OK, Json(Some(ingredient.into())))
@@ -94,7 +94,7 @@ impl IngredientRouter {
         Path(id): Path<Uuid>,
         Json(payload): Json<UpdatePayload>,
     ) -> (StatusCode, Json<Option<IngredientResponse>>) {
-        match state.dao.update_ingredient(id, payload.into()).await {
+        match state.db_client.update_ingredient(id, payload.into()).await {
             Ok(ingredient) => {
                 log::info!("Updated ingredient with id {id:?}");
                 (StatusCode::OK, Json(Some(ingredient.into())))
@@ -112,7 +112,7 @@ impl IngredientRouter {
     }
 
     async fn delete_ingredient(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
-        match state.dao.delete_ingredient(id).await {
+        match state.db_client.delete_ingredient(id).await {
             Ok(()) => {
                 log::info!("Deleted ingredient with id {:?}", id);
                 StatusCode::NO_CONTENT

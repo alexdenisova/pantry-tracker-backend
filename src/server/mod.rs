@@ -8,6 +8,7 @@ use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
 
 use self::routes::ingredients::IngredientRouter;
+use self::routes::pantry_items::PantryItemRouter;
 use self::routes::users::UserRouter;
 
 pub type ServerResult<T> = Result<T, ServerError>;
@@ -40,6 +41,7 @@ impl Server {
         let router: Router = Router::new()
             .route("/health", get(health))
             .nest("/ingredients", IngredientRouter::get())
+            .nest("/pantry_items", PantryItemRouter::get())
             .nest("/users", UserRouter::get())
             .with_state(self.state)
             .fallback(Server::fallback);
@@ -61,7 +63,7 @@ impl Server {
 }
 
 async fn health(State(state): State<AppState>) -> StatusCode {
-    if state.dao.health().await.is_ok() {
+    if state.db_client.health().await.is_ok() {
         log::debug!("Healthy");
         StatusCode::OK
     } else {

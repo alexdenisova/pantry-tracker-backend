@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-use entities::recipe_users::{ActiveModel, Column, Entity, Model, Relation};
+use db_entities::recipe_users::{ActiveModel, Column, Entity, Model, Relation};
 use sea_orm::{
     sea_query::{Alias, Expr},
     *,
 };
 use uuid::Uuid;
 
-use crate::{
+use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
 };
@@ -124,12 +124,12 @@ impl DatabaseExtra for DBClient {
             .select_only()
             .columns([Column::Id, Column::RecipeId])
             .columns([
-                entities::recipes::Column::CookingTimeMins,
-                entities::recipes::Column::Link,
-                entities::recipes::Column::Instructions,
+                db_entities::recipes::Column::CookingTimeMins,
+                db_entities::recipes::Column::Link,
+                db_entities::recipes::Column::Instructions,
             ])
             .column_as(
-                Expr::col((Alias::new("recipes"), entities::recipes::Column::Name)),
+                Expr::col((Alias::new("recipes"), db_entities::recipes::Column::Name)),
                 "recipe_name",
             )
             .join(JoinType::InnerJoin, Relation::Recipes.def())

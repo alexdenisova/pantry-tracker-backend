@@ -1,4 +1,4 @@
-use crate::errors::HealthcheckError;
+use crate::database::errors::HealthcheckError;
 use async_trait::async_trait;
 use sea_orm::DatabaseConnection;
 
