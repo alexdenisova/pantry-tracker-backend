@@ -45,7 +45,6 @@ pub trait DBTrait:
     + recipe_users::DatabaseCRUD
     + recipes::DatabaseCRUD
     + users::DatabaseCRUD
-    + recipe_ingredients::DatabaseExtra
 {
 }
 

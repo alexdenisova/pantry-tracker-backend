@@ -1,49 +1,69 @@
 use chrono::{NaiveDateTime, Utc};
-use db_entities::users::Model;
+use db_entities::recipes::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
     pub name: String,
+    pub cooking_time_mins: Option<i32>,
+    pub link: Option<String>,
+    pub instructions: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct ListParamsDto {
+    pub name: Option<String>,
+    pub cooking_time_mins: Option<i32>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
-    pub name: String,
+    pub name: Option<String>,
+    pub cooking_time_mins: Option<i32>,
+    pub link: Option<String>,
+    pub instructions: Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
-pub struct UserDto {
+pub struct RecipeDto {
     pub id: Uuid,
     pub name: String,
+    pub cooking_time_mins: Option<i32>,
+    pub link: Option<String>,
+    pub instructions: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
-pub struct UsersListDto {
-    pub items: Vec<UserDto>,
+pub struct RecipesListDto {
+    pub items: Vec<RecipeDto>,
 }
 
 impl From<CreateDto> for Model {
     fn from(value: CreateDto) -> Self {
         let now = Utc::now().naive_utc();
-
         Self {
             id: Uuid::new_v4(),
             name: value.name,
+            cooking_time_mins: value.cooking_time_mins,
+            link: value.link,
+            instructions: value.instructions,
             created_at: now,
             updated_at: now,
         }
     }
 }
 
-impl From<Model> for UserDto {
+impl From<Model> for RecipeDto {
     fn from(value: Model) -> Self {
         Self {
             id: value.id,
             name: value.name,
+            cooking_time_mins: value.cooking_time_mins,
+            link: value.link,
+            instructions: value.instructions,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }

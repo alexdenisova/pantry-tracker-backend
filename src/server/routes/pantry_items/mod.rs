@@ -37,7 +37,7 @@ impl PantryItemRouter {
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
         match state.db_client.create_pantry_item(payload.into()).await {
             Ok(pantry_item) => {
-                log::info!("PantryItem with id {:?} created", pantry_item.id.to_string());
+                log::info!("Pantry item with id {:?} created", pantry_item.id.to_string());
                 (StatusCode::CREATED, Json(Some(pantry_item.into())))
             }
             Err(err) => {
@@ -58,7 +58,7 @@ impl PantryItemRouter {
     ) -> (StatusCode, Json<Option<PantryItemListResponse>>) {
         match state.db_client.list_pantry_items(query_params.into()).await {
             Ok(pantry_items) => {
-                log::info!("{:?} pantry_items collected", pantry_items.items.len());
+                log::info!("{:?} pantry items collected", pantry_items.items.len());
                 (StatusCode::OK, Json(Some(pantry_items.into())))
             }
             Err(err) => {
@@ -74,7 +74,7 @@ impl PantryItemRouter {
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
         match state.db_client.get_pantry_item(id).await {
             Ok(pantry_item) => {
-                log::info!("Got pantry_item with id {:?}", pantry_item.id);
+                log::info!("Got pantry item with id {:?}", pantry_item.id);
                 (StatusCode::OK, Json(Some(pantry_item.into())))
             }
             Err(err) => {
@@ -96,7 +96,7 @@ impl PantryItemRouter {
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
         match state.db_client.update_pantry_item(id, payload.into()).await {
             Ok(pantry_item) => {
-                log::info!("Updated pantry_item with id {id:?}");
+                log::info!("Updated pantry item with id {id:?}");
                 (StatusCode::OK, Json(Some(pantry_item.into())))
             }
             Err(err) => {
@@ -114,7 +114,7 @@ impl PantryItemRouter {
     async fn delete_pantry_item(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
         match state.db_client.delete_pantry_item(id).await {
             Ok(()) => {
-                log::info!("Deleted pantry_item with id {:?}", id);
+                log::info!("Deleted pantry item with id {:?}", id);
                 StatusCode::NO_CONTENT
             }
             Err(err) => {

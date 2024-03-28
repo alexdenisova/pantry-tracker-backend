@@ -1,51 +1,51 @@
 use chrono::{NaiveDateTime, Utc};
-use db_entities::users::Model;
+use db_entities::recipe_users::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
-    pub name: String,
+    pub recipe_id: Uuid,
+    pub user_id: Uuid,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct UpdateDto {
-    pub name: String,
+#[derive(Deserialize, Debug, Default)]
+pub struct ListParamsDto {
+    pub user_id: Option<Uuid>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
-pub struct UserDto {
+pub struct RecipeUserDto {
     pub id: Uuid,
-    pub name: String,
+    pub recipe_id: Uuid,
+    pub user_id: Uuid,
     pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
-pub struct UsersListDto {
-    pub items: Vec<UserDto>,
+pub struct RecipeUsersListDto {
+    pub items: Vec<RecipeUserDto>,
 }
 
 impl From<CreateDto> for Model {
     fn from(value: CreateDto) -> Self {
         let now = Utc::now().naive_utc();
-
         Self {
             id: Uuid::new_v4(),
-            name: value.name,
+            recipe_id: value.recipe_id,
+            user_id: value.user_id,
             created_at: now,
-            updated_at: now,
         }
     }
 }
 
-impl From<Model> for UserDto {
+impl From<Model> for RecipeUserDto {
     fn from(value: Model) -> Self {
         Self {
             id: value.id,
-            name: value.name,
+            recipe_id: value.recipe_id,
+            user_id: value.user_id,
             created_at: value.created_at,
-            updated_at: value.updated_at,
         }
     }
 }

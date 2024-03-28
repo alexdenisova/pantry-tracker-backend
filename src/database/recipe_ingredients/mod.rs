@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use db_entities::ingredients::{ActiveModel, Column, Entity, Model};
+use chrono::Utc;
+use db_entities::recipe_ingredients::{ActiveModel, Column, Entity, Model};
 use sea_orm::*;
 use uuid::Uuid;
 
@@ -10,24 +11,35 @@ use crate::database::{
     DBClient,
 };
 
-use self::dto::{CreateDto, IngredientDto, IngredientsListDto, UpdateDto};
+use self::dto::{
+    CreateDto, ListParamsDto, RecipeIngredientDto, RecipeIngredientsListDto, UpdateDto,
+};
 
 #[async_trait]
 pub trait DatabaseCRUD {
-    async fn create_ingredient(&self, request: CreateDto) -> Result<IngredientDto, CreateError>;
-    async fn get_ingredient(&self, id: Uuid) -> Result<IngredientDto, GetError>;
-    async fn list_ingredients(&self) -> Result<IngredientsListDto, ListError>;
-    async fn update_ingredient(
+    async fn create_recipe_ingredient(
+        &self,
+        request: CreateDto,
+    ) -> Result<RecipeIngredientDto, CreateError>;
+    async fn get_recipe_ingredient(&self, id: Uuid) -> Result<RecipeIngredientDto, GetError>;
+    async fn list_recipe_ingredients(
+        &self,
+        list_params: ListParamsDto,
+    ) -> Result<RecipeIngredientsListDto, ListError>;
+    async fn update_recipe_ingredient(
         &self,
         id: Uuid,
         request: UpdateDto,
-    ) -> Result<IngredientDto, UpdateError>;
-    async fn delete_ingredient(&self, id: Uuid) -> Result<(), DeleteError>;
+    ) -> Result<RecipeIngredientDto, UpdateError>;
+    async fn delete_recipe_ingredient(&self, id: Uuid) -> Result<(), DeleteError>;
 }
 
 #[async_trait]
 impl DatabaseCRUD for DBClient {
-    async fn create_ingredient(&self, request: CreateDto) -> Result<IngredientDto, CreateError> {
+    async fn create_recipe_ingredient(
+        &self,
+        request: CreateDto,
+    ) -> Result<RecipeIngredientDto, CreateError> {
         let model: Model = request.into();
         let id = model.id;
         let active_model: ActiveModel = model.into();
@@ -43,7 +55,7 @@ impl DatabaseCRUD for DBClient {
             })?
             .into())
     }
-    async fn get_ingredient(&self, id: Uuid) -> Result<IngredientDto, GetError> {
+    async fn get_recipe_ingredient(&self, id: Uuid) -> Result<RecipeIngredientDto, GetError> {
         Ok(Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
@@ -54,25 +66,30 @@ impl DatabaseCRUD for DBClient {
             .ok_or(GetError::NotFound { id })?
             .into())
     }
-    async fn list_ingredients(&self) -> Result<IngredientsListDto, ListError> {
-        Ok(IngredientsListDto {
-            items: Entity::find()
-                .order_by_desc(Column::Name)
-                .order_by_desc(Column::Id)
-                .all(&self.database_connection)
-                .await
-                .map_err(|err| ListError::Unexpected { error: err.into() })?
-                .into_iter()
-                .map(Into::into)
-                .collect(),
+    async fn list_recipe_ingredients(
+        &self,
+        list_params: ListParamsDto,
+    ) -> Result<RecipeIngredientsListDto, ListError> {
+        Ok(RecipeIngredientsListDto {
+            items: match list_params.recipe_id {
+                Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
+                None => Entity::find(),
+            }
+            .order_by_desc(Column::Id)
+            .all(&self.database_connection)
+            .await
+            .map_err(|err| ListError::Unexpected { error: err.into() })?
+            .into_iter()
+            .map(Into::into)
+            .collect(),
         })
     }
-    async fn update_ingredient(
+    async fn update_recipe_ingredient(
         &self,
         id: Uuid,
         request: UpdateDto,
-    ) -> Result<IngredientDto, UpdateError> {
-        let ingredient: Model = Entity::find_by_id(id)
+    ) -> Result<RecipeIngredientDto, UpdateError> {
+        let recipe_ingredient: Model = Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
             .map_err(|err| UpdateError::Unexpected {
@@ -81,14 +98,19 @@ impl DatabaseCRUD for DBClient {
             })?
             .ok_or(UpdateError::NotFound { id })?
             .into();
-        let mut ingredient: ActiveModel = ingredient.into();
-        if let Some(name) = request.name {
-            ingredient.name = Set(name);
+        let mut recipe_ingredient: ActiveModel = recipe_ingredient.into();
+        if let Some(amount) = request.amount {
+            recipe_ingredient.amount = Set(amount);
         }
-        if let Some(can_be_eaten_raw) = request.can_be_eaten_raw {
-            ingredient.can_be_eaten_raw = Set(can_be_eaten_raw);
+        if let Some(unit) = request.unit {
+            recipe_ingredient.unit = Set(unit);
         }
-        Ok(Entity::update(ingredient)
+        if let Some(optional) = request.optional {
+            recipe_ingredient.optional = Set(optional);
+        }
+        recipe_ingredient.updated_at = Set(Utc::now().naive_utc());
+
+        Ok(Entity::update(recipe_ingredient)
             .filter(Column::Id.eq(id))
             .exec(&self.database_connection)
             .await
@@ -104,7 +126,7 @@ impl DatabaseCRUD for DBClient {
             })?
             .into())
     }
-    async fn delete_ingredient(&self, id: Uuid) -> Result<(), DeleteError> {
+    async fn delete_recipe_ingredient(&self, id: Uuid) -> Result<(), DeleteError> {
         if Entity::delete_by_id(id)
             .exec(&self.database_connection)
             .await

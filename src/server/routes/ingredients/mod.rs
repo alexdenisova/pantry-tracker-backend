@@ -1,12 +1,10 @@
 use axum::{
-    extract::{Json, Path, Query, State},
+    extract::{Json, Path, State},
     http::StatusCode,
     routing::get,
     Router,
 };
-use payload::{
-    CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams, UpdatePayload,
-};
+use payload::{CreatePayload, IngredientListResponse, IngredientResponse, UpdatePayload};
 
 use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
 use crate::server::state::AppState;
@@ -54,9 +52,8 @@ impl IngredientRouter {
 
     async fn list_ingredients(
         State(state): State<AppState>,
-        Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<IngredientListResponse>>) {
-        match state.db_client.list_ingredients(query_params.into()).await {
+        match state.db_client.list_ingredients().await {
             Ok(ingredients) => {
                 log::info!("{:?} ingredients collected", ingredients.items.len());
                 (StatusCode::OK, Json(Some(ingredients.into())))

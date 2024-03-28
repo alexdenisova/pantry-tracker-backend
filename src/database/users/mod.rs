@@ -11,13 +11,13 @@ use crate::database::{
     DBClient,
 };
 
-use self::dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
+use self::dto::{CreateDto, UpdateDto, UserDto, UsersListDto};
 
 #[async_trait]
 pub trait DatabaseCRUD {
     async fn create_user(&self, request: CreateDto) -> Result<UserDto, CreateError>;
     async fn get_user(&self, id: Uuid) -> Result<UserDto, GetError>;
-    async fn list_users(&self, list_params: ListParamsDto) -> Result<UsersListDto, ListError>;
+    async fn list_users(&self) -> Result<UsersListDto, ListError>;
     async fn update_user(&self, id: Uuid, request: UpdateDto) -> Result<UserDto, UpdateError>;
     async fn delete_user(&self, id: Uuid) -> Result<(), DeleteError>;
 }
@@ -51,20 +51,17 @@ impl DatabaseCRUD for DBClient {
             .ok_or(GetError::NotFound { id })?
             .into())
     }
-    async fn list_users(&self, list_params: ListParamsDto) -> Result<UsersListDto, ListError> {
+    async fn list_users(&self) -> Result<UsersListDto, ListError> {
         Ok(UsersListDto {
-            items: match list_params.predicate {
-                Some(value) => Entity::find().filter(Column::Name.contains(value)),
-                None => Entity::find(),
-            }
-            .order_by_desc(Column::Name)
-            .order_by_desc(Column::Id)
-            .all(&self.database_connection)
-            .await
-            .map_err(|err| ListError::Unexpected { error: err.into() })?
-            .into_iter()
-            .map(Into::into)
-            .collect(),
+            items: Entity::find()
+                .order_by_desc(Column::Name)
+                .order_by_desc(Column::Id)
+                .all(&self.database_connection)
+                .await
+                .map_err(|err| ListError::Unexpected { error: err.into() })?
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         })
     }
     async fn update_user(&self, id: Uuid, request: UpdateDto) -> Result<UserDto, UpdateError> {

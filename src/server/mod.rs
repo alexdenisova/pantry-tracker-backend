@@ -9,6 +9,9 @@ use tokio::net::{TcpListener, ToSocketAddrs};
 
 use self::routes::ingredients::IngredientRouter;
 use self::routes::pantry_items::PantryItemRouter;
+use self::routes::recipe_ingredients::RecipeIngredientRouter;
+use self::routes::recipe_users::RecipeUserRouter;
+use self::routes::recipes::RecipeRouter;
 use self::routes::users::UserRouter;
 
 pub type ServerResult<T> = Result<T, ServerError>;
@@ -42,6 +45,9 @@ impl Server {
             .route("/health", get(health))
             .nest("/ingredients", IngredientRouter::get())
             .nest("/pantry_items", PantryItemRouter::get())
+            .nest("/recipes", RecipeRouter::get())
+            .nest("/recipe_ingredients", RecipeIngredientRouter::get())
+            .nest("/recipe_users", RecipeUserRouter::get())
             .nest("/users", UserRouter::get())
             .with_state(self.state)
             .fallback(Server::fallback);

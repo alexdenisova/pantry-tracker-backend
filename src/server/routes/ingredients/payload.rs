@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::database::ingredients::dto::{
-    CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto,
+    CreateDto, IngredientDto, IngredientsListDto, UpdateDto,
 };
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -23,7 +23,7 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
-    pub name: String,
+    pub name: Option<String>,
     pub can_be_eaten_raw: Option<bool>,
 }
 
@@ -31,20 +31,7 @@ impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
         UpdateDto {
             name: val.name,
-            can_be_eaten_raw: val.can_be_eaten_raw.unwrap_or(false),
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct ListQueryParams {
-    pub predicate: Option<String>,
-}
-
-impl From<ListQueryParams> for ListParamsDto {
-    fn from(val: ListQueryParams) -> Self {
-        ListParamsDto {
-            predicate: val.predicate,
+            can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }
 }

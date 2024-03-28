@@ -11,13 +11,8 @@ pub struct CreateDto {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
-    pub name: String,
-    pub can_be_eaten_raw: bool,
-}
-
-#[derive(Deserialize, Debug, Default)]
-pub struct ListParamsDto {
-    pub predicate: Option<String>,
+    pub name: Option<String>,
+    pub can_be_eaten_raw: Option<bool>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
