@@ -2,14 +2,14 @@
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, DeriveEntityModel)]
 #[sea_orm(table_name = "recipe_ingredients")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
-    pub amount: i32,
+    pub amount: f32,
     pub unit: String,
     pub optional: bool,
     pub created_at: DateTime,

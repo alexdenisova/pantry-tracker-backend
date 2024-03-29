@@ -138,11 +138,7 @@ impl MigrationTrait for Migration {
                             .uuid()
                             .not_null(),
                     )
-                    .col(
-                        ColumnDef::new(RecipeIngredients::Amount)
-                            .integer()
-                            .not_null(),
-                    )
+                    .col(ColumnDef::new(RecipeIngredients::Amount).float().not_null())
                     .col(ColumnDef::new(RecipeIngredients::Unit).string().not_null())
                     .col(
                         ColumnDef::new(RecipeIngredients::Optional)

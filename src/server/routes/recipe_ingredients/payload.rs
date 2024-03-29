@@ -10,7 +10,7 @@ use crate::database::recipe_ingredients::dto::{
 pub struct CreatePayload {
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
-    pub amount: i32,
+    pub amount: f32,
     pub unit: String,
     pub optional: bool,
 }
@@ -29,7 +29,7 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
-    pub amount: Option<i32>,
+    pub amount: Option<f32>,
     pub unit: Option<String>,
     pub optional: Option<bool>,
 }
@@ -57,12 +57,12 @@ impl From<ListQueryParams> for ListParamsDto {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct RecipeIngredientResponse {
     pub id: Uuid,
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
-    pub amount: i32,
+    pub amount: f32,
     pub unit: String,
     pub optional: bool,
     pub created_at: NaiveDateTime,
@@ -84,7 +84,7 @@ impl From<RecipeIngredientDto> for RecipeIngredientResponse {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct RecipeIngredientListResponse {
     pub items: Vec<RecipeIngredientResponse>,
 }

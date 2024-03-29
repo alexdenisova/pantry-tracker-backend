@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub struct CreateDto {
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
-    pub amount: i32,
+    pub amount: f32,
     pub unit: String,
     pub optional: bool,
 }
@@ -19,24 +19,24 @@ pub struct ListParamsDto {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
-    pub amount: Option<i32>,
+    pub amount: Option<f32>,
     pub unit: Option<String>,
     pub optional: Option<bool>,
 }
 
-#[derive(Serialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Debug, Clone)]
 pub struct RecipeIngredientDto {
     pub id: Uuid,
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
-    pub amount: i32,
+    pub amount: f32,
     pub unit: String,
     pub optional: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Debug)]
 pub struct RecipeIngredientsListDto {
     pub items: Vec<RecipeIngredientDto>,
 }
