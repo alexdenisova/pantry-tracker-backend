@@ -62,10 +62,14 @@ impl DatabaseCRUD for DBClient {
         &self,
         list_params: ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError> {
+        let mut entity = match list_params.user_id {
+            Some(value) => Entity::find().filter(Column::UserId.eq(value)),
+            None => Entity::find(),
+        };
         Ok(PantryItemsListDto {
             items: match list_params.max_expiration_date {
-                Some(value) => Entity::find().filter(Column::ExpirationDate.lte(value)),
-                None => Entity::find(),
+                Some(value) => entity.filter(Column::ExpirationDate.lte(value)),
+                None => entity,
             }
             .order_by_asc(Column::ExpirationDate)
             .order_by_desc(Column::Id)

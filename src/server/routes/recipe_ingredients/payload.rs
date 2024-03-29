@@ -44,7 +44,7 @@ impl From<UpdatePayload> for UpdateDto {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
     pub recipe_id: Option<Uuid>,
 }

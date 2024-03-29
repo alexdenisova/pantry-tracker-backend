@@ -26,6 +26,7 @@ pub struct UpdateDto {
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
     pub max_expiration_date: Option<NaiveDate>,
+    pub user_id: Option<Uuid>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]

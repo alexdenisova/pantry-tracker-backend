@@ -52,15 +52,17 @@ impl From<UpdatePayload> for UpdateDto {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
     pub max_expiration_date: Option<NaiveDate>,
+    pub user_id: Option<Uuid>,
 }
 
 impl From<ListQueryParams> for ListParamsDto {
     fn from(val: ListQueryParams) -> Self {
         ListParamsDto {
             max_expiration_date: val.max_expiration_date,
+            user_id: val.user_id,
         }
     }
 }

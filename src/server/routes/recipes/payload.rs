@@ -44,7 +44,7 @@ impl From<UpdatePayload> for UpdateDto {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
     pub name_contains: Option<String>,
     pub cooking_time_mins: Option<i32>,

@@ -21,7 +21,7 @@ impl From<CreatePayload> for CreateDto {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
     pub user_id: Option<Uuid>,
 }
