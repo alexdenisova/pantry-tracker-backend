@@ -9,6 +9,7 @@ use tokio::net::{TcpListener, ToSocketAddrs};
 
 use self::routes::ingredients::IngredientRouter;
 use self::routes::pantry_items::PantryItemRouter;
+use self::routes::parse_ingredients::ParseIngredientsRouter;
 use self::routes::recipe_ingredients::RecipeIngredientRouter;
 use self::routes::recipe_users::RecipeUserRouter;
 use self::routes::recipes::RecipeRouter;
@@ -45,6 +46,7 @@ impl Server {
             .route("/health", get(health))
             .nest("/ingredients", IngredientRouter::get())
             .nest("/pantry_items", PantryItemRouter::get())
+            .nest("/parse_ingredients", ParseIngredientsRouter::get())
             .nest("/recipes", RecipeRouter::get())
             .nest("/recipe_ingredients", RecipeIngredientRouter::get())
             .nest("/recipe_users", RecipeUserRouter::get())
