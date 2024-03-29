@@ -62,7 +62,7 @@ impl DatabaseCRUD for DBClient {
         &self,
         list_params: ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError> {
-        let mut entity = match list_params.user_id {
+        let entity = match list_params.user_id {
             Some(value) => Entity::find().filter(Column::UserId.eq(value)),
             None => Entity::find(),
         };
