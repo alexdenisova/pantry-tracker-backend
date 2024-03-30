@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'fridge-tracker'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=fridge-tracker",
+                    "--package=fridge-tracker"
+                ],
+                "filter": {
+                    "name": "fridge-tracker",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "run"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'fridge-tracker'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=fridge-tracker",
+                    "--package=fridge-tracker"
+                ],
+                "filter": {
+                    "name": "fridge-tracker",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+    ]
+}
