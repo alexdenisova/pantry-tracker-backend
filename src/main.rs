@@ -23,7 +23,6 @@ async fn main() -> AnyResult<()> {
     let db_connection = Database::connect(cli.database.url).await?;
     match cli.command {
         Commands::Run(args) => {
-            // let dao = DatabaseClient::new(db_connection);
             let state = AppState::new(db_connection);
             let server = Server::new(state);
 
