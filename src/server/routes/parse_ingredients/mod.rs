@@ -7,7 +7,7 @@ use axum::{
 };
 use thiserror::Error;
 
-const MEASUREMENTS: [&'static str; 16] = [
+const MEASUREMENTS: [&str; 16] = [
     "cup",
     "tablespoon",
     "tbsp",
@@ -37,6 +37,7 @@ impl ParseIngredientsRouter {
         Router::new().route("/", get(ParseIngredientsRouter::parse_ingredients))
     }
 
+    #[allow(clippy::unused_async)]
     async fn parse_ingredients(
         State(_): State<AppState>,
         payload: String,
@@ -94,13 +95,13 @@ fn parse_amount(amount: &str) -> Result<f32, ParseAmountError> {
                 '½' => calc_amount += ".5",
                 '⅓' => calc_amount += ".33",
                 '¼' => calc_amount += ".25",
-                _ => return Err(ParseAmountError::UnknownCharacter { c: c }),
+                _ => return Err(ParseAmountError::UnknownCharacter { c }),
             };
         }
-        return Ok(calc_amount.parse().unwrap());
+        Ok(calc_amount.parse().unwrap())
     } else {
-        return Err(ParseAmountError::NoAmount);
-    };
+        Err(ParseAmountError::NoAmount)
+    }
 }
 
 #[derive(Error, Debug)]
@@ -112,11 +113,10 @@ pub enum ParseUnitError {
 fn parse_unit(unit: &str) -> Result<String, ParseUnitError> {
     if MEASUREMENTS.contains(&unit) {
         return Ok(unit.to_owned());
-    } else {
-        return Err(ParseUnitError::UnknownUnit {
-            unit: unit.to_owned(),
-        });
-    };
+    }
+    Err(ParseUnitError::UnknownUnit {
+        unit: unit.to_owned(),
+    })
 }
 
 fn parse_ingredient(string: &str) -> String {
@@ -128,5 +128,5 @@ fn parse_ingredient(string: &str) -> String {
             break;
         }
     }
-    return ingredient;
+    ingredient
 }

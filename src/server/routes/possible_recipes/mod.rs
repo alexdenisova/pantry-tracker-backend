@@ -52,7 +52,7 @@ impl PossibleRecipesRouter {
             let recipe_ingredients = match state
                 .db_client
                 .list_recipe_ingredients(RecipeIngredientListDto {
-                    recipe_id: Some(recipe.recipe_id.clone()),
+                    recipe_id: Some(recipe.recipe_id),
                 })
                 .await
             {
@@ -82,11 +82,11 @@ impl PossibleRecipesRouter {
             }
             possbile_recipe_ids.push(recipe.id);
         }
-        return (
+        (
             StatusCode::OK,
             Json(Some(PossibleRecipesResponse {
                 recipe_ids: possbile_recipe_ids,
             })),
-        );
+        )
     }
 }

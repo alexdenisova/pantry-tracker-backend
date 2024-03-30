@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use db_entities::ingredients::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 pub mod dto;
@@ -79,8 +79,7 @@ impl DatabaseCRUD for DBClient {
                 id,
                 error: err.into(),
             })?
-            .ok_or(UpdateError::NotFound { id })?
-            .into();
+            .ok_or(UpdateError::NotFound { id })?;
         let mut ingredient: ActiveModel = ingredient.into();
         if let Some(name) = request.name {
             ingredient.name = Set(name);

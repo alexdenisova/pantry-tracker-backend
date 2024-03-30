@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::Utc;
 use db_entities::recipes::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 pub mod dto;
@@ -79,8 +79,7 @@ impl DatabaseCRUD for DBClient {
                 id,
                 error: err.into(),
             })?
-            .ok_or(UpdateError::NotFound { id })?
-            .into();
+            .ok_or(UpdateError::NotFound { id })?;
         let mut recipe: ActiveModel = recipe.into();
         if let Some(name) = request.name {
             recipe.name = Set(name);

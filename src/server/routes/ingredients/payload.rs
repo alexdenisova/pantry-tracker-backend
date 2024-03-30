@@ -2,9 +2,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::database::ingredients::dto::{
-    CreateDto, IngredientDto, IngredientsListDto, UpdateDto,
-};
+use crate::database::ingredients::dto::{CreateDto, IngredientDto, IngredientsListDto, UpdateDto};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {

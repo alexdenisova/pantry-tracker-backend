@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::Utc;
 use db_entities::pantry_items::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 pub mod dto;
@@ -93,8 +93,7 @@ impl DatabaseCRUD for DBClient {
                 id,
                 error: err.into(),
             })?
-            .ok_or(UpdateError::NotFound { id })?
-            .into();
+            .ok_or(UpdateError::NotFound { id })?;
         let mut pantry_item: ActiveModel = pantry_item.into();
         pantry_item.purchase_date = Set(request.purchase_date);
         if let Some(date) = request.expiration_date {

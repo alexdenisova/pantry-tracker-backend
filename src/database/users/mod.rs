@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::Utc;
 use db_entities::users::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use sea_orm::{ActiveModelTrait, ActiveValue, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 pub mod dto;

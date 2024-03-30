@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 use crate::server::AppState;
 use clap::Parser;
 use color_eyre::Result as AnyResult;
 use dotenvy::dotenv;
 use migrations::{Migrator, MigratorTrait};
-use sea_orm::*;
-use sea_orm_migration::prelude::*;
+use sea_orm::Database;
 use server::Server;
 use settings::{Cli, Commands};
 

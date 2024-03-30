@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use db_entities::recipe_users::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
 pub mod dto;
