@@ -12,6 +12,7 @@ pub struct Model {
     pub link: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub instructions: Option<String>,
+    pub image: Option<String>,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }

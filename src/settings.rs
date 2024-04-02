@@ -26,6 +26,8 @@ pub enum Commands {
     Run(RunArgs),
     #[command(about = "Run database migrations and exit")]
     Migrate,
+    #[command(about = "Fill database with test data")]
+    Test,
 }
 
 #[derive(Debug, Args)]

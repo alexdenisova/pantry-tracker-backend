@@ -12,6 +12,8 @@ pub struct CreatePayload {
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
+    pub image: Option<String>,
+    // pub calories
 }
 
 impl From<CreatePayload> for CreateDto {
@@ -21,6 +23,7 @@ impl From<CreatePayload> for CreateDto {
             cooking_time_mins: val.cooking_time_mins,
             link: val.link,
             instructions: val.instructions,
+            image: val.image,
         }
     }
 }
@@ -31,6 +34,7 @@ pub struct UpdatePayload {
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
+    pub image: Option<String>,
 }
 
 impl From<UpdatePayload> for UpdateDto {
@@ -40,6 +44,7 @@ impl From<UpdatePayload> for UpdateDto {
             cooking_time_mins: val.cooking_time_mins,
             link: val.link,
             instructions: val.instructions,
+            image: val.image,
         }
     }
 }
@@ -53,7 +58,7 @@ pub struct ListQueryParams {
 impl From<ListQueryParams> for ListParamsDto {
     fn from(val: ListQueryParams) -> Self {
         ListParamsDto {
-            name: val.name_contains,
+            name_contains: val.name_contains,
             cooking_time_mins: val.cooking_time_mins,
         }
     }
@@ -66,6 +71,7 @@ pub struct RecipeResponse {
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
+    pub image: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -78,6 +84,7 @@ impl From<RecipeDto> for RecipeResponse {
             cooking_time_mins: val.cooking_time_mins,
             link: val.link,
             instructions: val.instructions,
+            image: val.image,
             created_at: val.created_at,
             updated_at: val.created_at,
         }

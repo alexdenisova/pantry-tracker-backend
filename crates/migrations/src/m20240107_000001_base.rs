@@ -54,14 +54,10 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(PantryItems::Table)
                     .col(ColumnDef::new(PantryItems::Id).uuid().primary_key())
-                    .col(ColumnDef::new(PantryItems::IngredientId).uuid().not_null())
+                    .col(ColumnDef::new(PantryItems::IngredientId).uuid().not_null().unique_key())
                     .col(ColumnDef::new(PantryItems::PurchaseDate).date())
-                    .col(
-                        ColumnDef::new(PantryItems::ExpirationDate)
-                            .date()
-                            .not_null(),
-                    )
-                    .col(ColumnDef::new(PantryItems::Quantity).integer().not_null())
+                    .col(ColumnDef::new(PantryItems::ExpirationDate).date())
+                    .col(ColumnDef::new(PantryItems::Quantity).integer())
                     .col(ColumnDef::new(PantryItems::WeightGrams).integer())
                     .col(ColumnDef::new(PantryItems::VolumeMilliLitres).integer())
                     .col(ColumnDef::new(PantryItems::UserId).uuid().not_null())
@@ -107,6 +103,7 @@ impl MigrationTrait for Migration {
                     // .col(ColumnDef::new(Recipes::CookingTime).interval(None, None))
                     .col(ColumnDef::new(Recipes::Link).string())
                     .col(ColumnDef::new(Recipes::Instructions).text())
+                    .col(ColumnDef::new(Recipes::Image).string())
                     .col(
                         ColumnDef::new(Recipes::CreatedAt)
                             .timestamp()
@@ -299,7 +296,8 @@ pub enum Recipes {
     Name,
     CookingTimeMins,
     Link,
-    Instructions, // Equipment, Tags (Breakfast, Lunch, Soup, Baking..)
+    Instructions, //TODO: Equipment, Tags (Breakfast, Lunch, Soup, Baking..)
+    Image,
     CreatedAt,
     UpdatedAt,
 }

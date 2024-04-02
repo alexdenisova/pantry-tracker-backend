@@ -13,6 +13,7 @@ use settings::{Cli, Commands};
 mod database;
 mod server;
 mod settings;
+mod test;
 
 #[tokio::main]
 async fn main() -> AnyResult<()> {
@@ -29,6 +30,10 @@ async fn main() -> AnyResult<()> {
             server.run(args.socket).await.unwrap();
         }
         Commands::Migrate => Migrator::up(&db_connection, None).await?,
+        Commands::Test => {
+            let client = database::DBClient::new(db_connection);
+            test::migrate_test_data(client).await?;
+        }
     }
     Ok(())
 }

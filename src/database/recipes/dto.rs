@@ -9,11 +9,12 @@ pub struct CreateDto {
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
+    pub image: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
-    pub name: Option<String>,
+    pub name_contains: Option<String>,
     pub cooking_time_mins: Option<i32>,
 }
 
@@ -23,6 +24,7 @@ pub struct UpdateDto {
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
+    pub image: Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
@@ -32,6 +34,7 @@ pub struct RecipeDto {
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
+    pub image: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -50,6 +53,7 @@ impl From<CreateDto> for Model {
             cooking_time_mins: value.cooking_time_mins,
             link: value.link,
             instructions: value.instructions,
+            image: value.image,
             created_at: now,
             updated_at: now,
         }
@@ -64,6 +68,7 @@ impl From<Model> for RecipeDto {
             cooking_time_mins: value.cooking_time_mins,
             link: value.link,
             instructions: value.instructions,
+            image: value.image,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }

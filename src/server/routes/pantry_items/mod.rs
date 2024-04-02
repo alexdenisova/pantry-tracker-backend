@@ -5,7 +5,7 @@ use axum::{
     Router,
 };
 use payload::{
-    CreatePayload, PantryItemListResponse, PantryItemResponse, ListQueryParams, UpdatePayload,
+    CreatePayload, ListQueryParams, PantryItemListResponse, PantryItemResponse, UpdatePayload,
 };
 
 use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
@@ -35,9 +35,19 @@ impl PantryItemRouter {
         State(state): State<AppState>,
         Json(payload): Json<CreatePayload>,
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
+        if !validate_quantity(
+            &payload.quantity,
+            &payload.weight_grams,
+            &payload.volume_milli_litres,
+        ) {
+            return (StatusCode::UNPROCESSABLE_ENTITY, Json(None));
+        }
         match state.db_client.create_pantry_item(payload.into()).await {
             Ok(pantry_item) => {
-                log::info!("Pantry item with id {:?} created", pantry_item.id.to_string());
+                log::info!(
+                    "Pantry item with id {:?} created",
+                    pantry_item.id.to_string()
+                );
                 (StatusCode::CREATED, Json(Some(pantry_item.into())))
             }
             Err(err) => {
@@ -56,10 +66,33 @@ impl PantryItemRouter {
         State(state): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<PantryItemListResponse>>) {
+        let name_pattern = query_params.name_contains.clone();
         match state.db_client.list_pantry_items(query_params.into()).await {
             Ok(pantry_items) => {
-                log::info!("{:?} pantry items collected", pantry_items.items.len());
-                (StatusCode::OK, Json(Some(pantry_items.into())))
+                if let Some(pattern) = name_pattern {
+                    let mut filtered_items = Vec::new();
+                    for item in pantry_items.items {
+                        let ingredient_name = state
+                            .db_client
+                            .get_ingredient(item.ingredient_id)
+                            .await
+                            .unwrap()
+                            .name;
+                        if ingredient_name.to_lowercase().contains(&pattern) {
+                            filtered_items.push(item.into());
+                        }
+                    }
+                    log::info!("{:?} pantry items collected", filtered_items.len());
+                    (
+                        StatusCode::OK,
+                        Json(Some(PantryItemListResponse {
+                            items: filtered_items,
+                        })),
+                    )
+                } else {
+                    log::info!("{:?} pantry items collected", pantry_items.items.len());
+                    (StatusCode::OK, Json(Some(pantry_items.into())))
+                }
             }
             Err(err) => {
                 log::error!("{}", err.to_string());
@@ -94,6 +127,13 @@ impl PantryItemRouter {
         Path(id): Path<Uuid>,
         Json(payload): Json<UpdatePayload>,
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
+        if !validate_quantity(
+            &payload.quantity,
+            &payload.weight_grams,
+            &payload.volume_milli_litres,
+        ) {
+            return (StatusCode::UNPROCESSABLE_ENTITY, Json(None));
+        }
         match state.db_client.update_pantry_item(id, payload.into()).await {
             Ok(pantry_item) => {
                 log::info!("Updated pantry item with id {id:?}");
@@ -128,4 +168,15 @@ impl PantryItemRouter {
             }
         }
     }
+}
+
+fn validate_quantity(
+    quantity: &Option<i32>,
+    weight_grams: &Option<i32>,
+    volume_milli_litres: &Option<i32>,
+) -> bool {
+    quantity.is_none() && weight_grams.is_none() && volume_milli_litres.is_none()
+        || quantity.is_some() && weight_grams.is_none() && volume_milli_litres.is_none()
+        || quantity.is_none() && weight_grams.is_some() && volume_milli_litres.is_none()
+        || quantity.is_none() && weight_grams.is_none() && volume_milli_litres.is_some()
 }

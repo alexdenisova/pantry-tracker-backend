@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use chrono::Utc;
 use db_entities::recipes::{ActiveModel, Column, Entity, Model};
+use migrations::{Expr, Func};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
@@ -52,8 +53,11 @@ impl DatabaseCRUD for DBClient {
             .into())
     }
     async fn list_recipes(&self, list_params: ListParamsDto) -> Result<RecipesListDto, ListError> {
-        let mut entity = match list_params.name {
-            Some(value) => Entity::find().filter(Column::Name.contains(value)),
+        let mut entity = match list_params.name_contains {
+            Some(value) => Entity::find().filter(
+                Expr::expr(Func::lower(Expr::col(Column::Name)))
+                    .like(format!("%{}%", value.to_lowercase())),
+            ),
             None => Entity::find(),
         };
         entity = match list_params.cooking_time_mins {

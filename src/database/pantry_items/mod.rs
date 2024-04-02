@@ -96,12 +96,8 @@ impl DatabaseCRUD for DBClient {
             .ok_or(UpdateError::NotFound { id })?;
         let mut pantry_item: ActiveModel = pantry_item.into();
         pantry_item.purchase_date = Set(request.purchase_date);
-        if let Some(date) = request.expiration_date {
-            pantry_item.expiration_date = Set(date);
-        }
-        if let Some(quantity) = request.quantity {
-            pantry_item.quantity = Set(quantity);
-        }
+        pantry_item.expiration_date = Set(request.expiration_date);
+        pantry_item.quantity = Set(request.quantity);
         pantry_item.weight_grams = Set(request.weight_grams);
         pantry_item.weight_grams = Set(request.volume_milli_litres);
         pantry_item.updated_at = Set(Utc::now().naive_utc());
