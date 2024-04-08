@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use uuid::Uuid;
 
 use crate::database::recipes::dto::{
@@ -10,9 +11,9 @@ use crate::database::recipes::dto::{
 pub struct CreatePayload {
     pub name: String,
     pub cooking_time_mins: Option<i32>,
-    pub link: Option<String>,
+    pub link: Option<Url>,
     pub instructions: Option<String>,
-    pub image: Option<String>,
+    pub image: Option<Url>,
     // pub calories
 }
 
@@ -21,9 +22,9 @@ impl From<CreatePayload> for CreateDto {
         CreateDto {
             name: val.name,
             cooking_time_mins: val.cooking_time_mins,
-            link: val.link,
+            link: val.link.map(|url| url.to_string()),
             instructions: val.instructions,
-            image: val.image,
+            image: val.image.map(|url| url.to_string()),
         }
     }
 }
@@ -32,9 +33,9 @@ impl From<CreatePayload> for CreateDto {
 pub struct UpdatePayload {
     pub name: Option<String>,
     pub cooking_time_mins: Option<i32>,
-    pub link: Option<String>,
+    pub link: Option<Url>,
     pub instructions: Option<String>,
-    pub image: Option<String>,
+    pub image: Option<Url>,
 }
 
 impl From<UpdatePayload> for UpdateDto {
@@ -42,9 +43,9 @@ impl From<UpdatePayload> for UpdateDto {
         UpdateDto {
             name: val.name,
             cooking_time_mins: val.cooking_time_mins,
-            link: val.link,
+            link: val.link.map(|url| url.to_string()),
             instructions: val.instructions,
-            image: val.image,
+            image: val.image.map(|url| url.to_string()),
         }
     }
 }

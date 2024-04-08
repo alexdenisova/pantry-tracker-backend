@@ -40,7 +40,7 @@ impl RecipeRouter {
         match state.db_client.create_recipe(payload.into()).await {
             Ok(recipe) => {
                 log::info!(
-                    "Recipe ingredient with id {:?} created",
+                    "Recipe with id {:?} created",
                     recipe.id.to_string()
                 );
                 (StatusCode::CREATED, Json(Some(recipe.into())))
@@ -133,7 +133,7 @@ impl RecipeRouter {
         {
             Ok(recipe_ingredients) => {
                 log::info!(
-                    "{:?} recipe ingredients collected",
+                    "{:?} recipes collected",
                     recipe_ingredients.items.len()
                 );
                 Ok(recipe_ingredients)
@@ -151,7 +151,7 @@ impl RecipeRouter {
     ) -> (StatusCode, Json<Option<RecipeResponse>>) {
         match state.db_client.get_recipe(id).await {
             Ok(recipe) => {
-                log::info!("Got recipe ingredient with id {:?}", recipe.id);
+                log::info!("Got recipe with id {:?}", recipe.id);
                 (StatusCode::OK, Json(Some(recipe.into())))
             }
             Err(err) => {
@@ -173,7 +173,7 @@ impl RecipeRouter {
     ) -> (StatusCode, Json<Option<RecipeResponse>>) {
         match state.db_client.update_recipe(id, payload.into()).await {
             Ok(recipe) => {
-                log::info!("Updated recipe ingredient with id {id:?}");
+                log::info!("Updated recipe with id {id:?}");
                 (StatusCode::OK, Json(Some(recipe.into())))
             }
             Err(err) => {
@@ -191,7 +191,7 @@ impl RecipeRouter {
     async fn delete_recipe(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
         match state.db_client.delete_recipe(id).await {
             Ok(()) => {
-                log::info!("Deleted recipe ingredient with id {:?}", id);
+                log::info!("Deleted recipe with id {:?}", id);
                 StatusCode::NO_CONTENT
             }
             Err(err) => {
