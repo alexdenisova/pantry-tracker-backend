@@ -49,48 +49,7 @@ impl ParseIngredientsRouter {
     ) -> (StatusCode, Json<Option<ParseIngredientsResponse>>) {
         if let Ok(input) = decode(&query_params.text) {
             let ingredients = input.replace(|c: char| !c.is_ascii() && !c.is_alphanumeric(), "");
-            let mut parsed = Vec::new();
-            for line in ingredients.split('\n') {
-                let line = line.trim();
-                let mut ingredient = ParsedRecipeIngredient::default();
-                let re = Regex::new(INGREDIENT_REGEX).unwrap();
-                if let Some(caps) = re.captures(line) {
-                    if let Ok(amount) = parse_amount(line, &re) {
-                        ingredient.amount = Some(amount);
-                    } else {
-                        failed_to_parse(line, ingredient, &mut parsed);
-                        continue;
-                    }
-
-                    if let Some(word_2) = caps.get(4) {
-                        if let Ok(unit) = parse_unit(word_2.as_str()) {
-                            ingredient.unit = Some(unit);
-                            if let Some(word_3) = caps.get(5) {
-                                ingredient.name = parse_ingredient(word_3.as_str());
-                            } else {
-                                failed_to_parse(line, ingredient, &mut parsed);
-                                continue;
-                            }
-                        } else {
-                            ingredient.unit = None;
-                            if let Some(word_3) = caps.get(5) {
-                                ingredient.name =
-                                    parse_ingredient(&[word_2.as_str(), word_3.as_str()].join(" "));
-                            } else {
-                                ingredient.name = parse_ingredient(word_2.as_str());
-                            }
-                        }
-                    } else {
-                        failed_to_parse(line, ingredient, &mut parsed);
-                        continue;
-                    }
-
-                    log::debug!("Parsed ingredient: {:?}", ingredient);
-                    parsed.push(ingredient);
-                } else {
-                    failed_to_parse(line, ingredient, &mut parsed);
-                }
-            }
+            let parsed = parse_ingredients(ingredients.split('\n').collect());
             return (
                 StatusCode::OK,
                 Json(Some(ParseIngredientsResponse { items: parsed })),
@@ -100,16 +59,57 @@ impl ParseIngredientsRouter {
     }
 }
 
-fn failed_to_parse(
-    line: &str,
-    mut ingredient: ParsedRecipeIngredient,
-    parsed: &mut Vec<ParsedRecipeIngredient>,
-) {
-    log::debug!("Failed to parse ingredient: {}", line);
-    ingredient.name = line.to_owned();
-    ingredient.unit = None;
-    ingredient.amount = None;
-    (*parsed).push(ingredient);
+pub fn parse_ingredients(ingredients: Vec<&str>) -> Vec<ParsedRecipeIngredient> {
+    let mut parsed = Vec::new();
+    for ingredient in ingredients {
+        if let Some(ingredient) = parse_ingredient(ingredient) {
+            parsed.push(ingredient);
+        } else {
+            log::debug!("Failed to parse ingredient: {}", ingredient);
+            parsed.push(ParsedRecipeIngredient {
+                amount: None,
+                unit: None,
+                name: ingredient.to_owned(),
+            });
+        }
+    }
+    parsed
+}
+
+fn parse_ingredient(line: &str) -> Option<ParsedRecipeIngredient> {
+    let line = line.trim();
+    let mut ingredient = ParsedRecipeIngredient::default();
+    let re = Regex::new(INGREDIENT_REGEX).unwrap();
+    if let Some(caps) = re.captures(line) {
+        if let Ok(amount) = parse_amount(line, &re) {
+            ingredient.amount = Some(amount);
+        } else {
+            return None;
+        }
+
+        if let Some(word_2) = caps.get(4) {
+            if let Ok(unit) = parse_unit(word_2.as_str()) {
+                ingredient.unit = Some(unit);
+                if let Some(word_3) = caps.get(5) {
+                    ingredient.name = parse_name(word_3.as_str());
+                } else {
+                    return None;
+                }
+            } else {
+                ingredient.unit = None;
+                if let Some(word_3) = caps.get(5) {
+                    ingredient.name = parse_name(&[word_2.as_str(), word_3.as_str()].join(" "));
+                } else {
+                    ingredient.name = parse_name(word_2.as_str());
+                }
+            }
+        } else {
+            return None;
+        }
+        log::debug!("Parsed ingredient: {:?}", ingredient);
+        return Some(ingredient);
+    }
+    return None;
 }
 
 #[derive(Error, Debug)]
@@ -201,7 +201,7 @@ fn parse_unit(unit: &str) -> Result<String, ParseUnitError> {
     })
 }
 
-fn parse_ingredient(string: &str) -> String {
+fn parse_name(string: &str) -> String {
     let mut ingredient = String::new();
     for c in string.chars() {
         if c.is_alphabetic() || c == ' ' {
