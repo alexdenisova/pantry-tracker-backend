@@ -53,6 +53,7 @@ impl From<UpdatePayload> for UpdateDto {
 pub struct ListQueryParams {
     pub name_contains: Option<String>,
     pub cooking_time_mins: Option<i32>,
+    pub ingredient_ids: Option<String>, // urlencoded array of ingredient_ids
 }
 
 impl From<ListQueryParams> for ListParamsDto {
@@ -64,7 +65,7 @@ impl From<ListQueryParams> for ListParamsDto {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub struct RecipeResponse {
     pub id: Uuid,
     pub name: String,

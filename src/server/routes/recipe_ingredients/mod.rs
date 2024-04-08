@@ -52,7 +52,7 @@ impl RecipeIngredientRouter {
         }
     }
 
-    async fn list_recipe_ingredients(
+    pub async fn list_recipe_ingredients(
         State(state): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<RecipeIngredientListResponse>>) {

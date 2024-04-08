@@ -36,9 +36,9 @@ impl PantryItemRouter {
         Json(payload): Json<CreatePayload>,
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
         if !validate_quantity(
-            &payload.quantity,
-            &payload.weight_grams,
-            &payload.volume_milli_litres,
+            payload.quantity,
+            payload.weight_grams,
+            payload.volume_milli_litres,
         ) {
             return (StatusCode::UNPROCESSABLE_ENTITY, Json(None));
         }
@@ -128,9 +128,9 @@ impl PantryItemRouter {
         Json(payload): Json<UpdatePayload>,
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
         if !validate_quantity(
-            &payload.quantity,
-            &payload.weight_grams,
-            &payload.volume_milli_litres,
+            payload.quantity,
+            payload.weight_grams,
+            payload.volume_milli_litres,
         ) {
             return (StatusCode::UNPROCESSABLE_ENTITY, Json(None));
         }
@@ -171,9 +171,9 @@ impl PantryItemRouter {
 }
 
 fn validate_quantity(
-    quantity: &Option<i32>,
-    weight_grams: &Option<i32>,
-    volume_milli_litres: &Option<i32>,
+    quantity: Option<i32>,
+    weight_grams: Option<i32>,
+    volume_milli_litres: Option<i32>,
 ) -> bool {
     quantity.is_none() && weight_grams.is_none() && volume_milli_litres.is_none()
         || quantity.is_some() && weight_grams.is_none() && volume_milli_litres.is_none()

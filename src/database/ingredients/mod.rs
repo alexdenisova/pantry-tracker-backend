@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use db_entities::ingredients::{ActiveModel, Column, Entity, Model};
+use migrations::{Expr, Func};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
@@ -10,13 +11,16 @@ use crate::database::{
     DBClient,
 };
 
-use self::dto::{CreateDto, IngredientDto, IngredientsListDto, UpdateDto};
+use self::dto::{CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto};
 
 #[async_trait]
 pub trait DatabaseCRUD {
     async fn create_ingredient(&self, request: CreateDto) -> Result<IngredientDto, CreateError>;
     async fn get_ingredient(&self, id: Uuid) -> Result<IngredientDto, GetError>;
-    async fn list_ingredients(&self) -> Result<IngredientsListDto, ListError>;
+    async fn list_ingredients(
+        &self,
+        list_params: ListParamsDto,
+    ) -> Result<IngredientsListDto, ListError>;
     async fn update_ingredient(
         &self,
         id: Uuid,
@@ -54,17 +58,26 @@ impl DatabaseCRUD for DBClient {
             .ok_or(GetError::NotFound { id })?
             .into())
     }
-    async fn list_ingredients(&self) -> Result<IngredientsListDto, ListError> {
+    async fn list_ingredients(
+        &self,
+        list_params: ListParamsDto,
+    ) -> Result<IngredientsListDto, ListError> {
         Ok(IngredientsListDto {
-            items: Entity::find()
-                .order_by_desc(Column::Name)
-                .order_by_desc(Column::Id)
-                .all(&self.database_connection)
-                .await
-                .map_err(|err| ListError::Unexpected { error: err.into() })?
-                .into_iter()
-                .map(Into::into)
-                .collect(),
+            items: match list_params.name {
+                Some(value) => Entity::find().filter(
+                    Expr::expr(Func::lower(Expr::col(Column::Name)))
+                        .eq(value.to_lowercase().to_string()),
+                ),
+                None => Entity::find(),
+            }
+            .order_by_desc(Column::Name)
+            .order_by_desc(Column::Id)
+            .all(&self.database_connection)
+            .await
+            .map_err(|err| ListError::Unexpected { error: err.into() })?
+            .into_iter()
+            .map(Into::into)
+            .collect(),
         })
     }
     async fn update_ingredient(

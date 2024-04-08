@@ -16,7 +16,6 @@ use self::routes::possible_recipes::PossibleRecipesRouter;
 use self::routes::recipe_ingredients::RecipeIngredientRouter;
 use self::routes::recipe_users::RecipeUserRouter;
 use self::routes::recipes::RecipeRouter;
-use self::routes::recipes_with_ingredients::RecipesWithIngredientsRouter;
 use self::routes::users::UserRouter;
 
 pub type ServerResult<T> = Result<T, ServerError>;
@@ -58,10 +57,6 @@ impl Server {
             .nest("/parse_ingredients", ParseIngredientsRouter::get())
             .nest("/possible_recipes", PossibleRecipesRouter::list())
             .nest("/recipes", RecipeRouter::get())
-            .nest(
-                "/recipes_with_ingredients",
-                RecipesWithIngredientsRouter::list(),
-            )
             .nest("/recipe_ingredients", RecipeIngredientRouter::get())
             .nest("/recipe_users", RecipeUserRouter::get())
             .nest("/users", UserRouter::get())

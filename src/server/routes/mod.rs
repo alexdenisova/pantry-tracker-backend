@@ -5,5 +5,4 @@ pub mod possible_recipes;
 pub mod recipe_ingredients;
 pub mod recipe_users;
 pub mod recipes;
-pub mod recipes_with_ingredients;
 pub mod users;

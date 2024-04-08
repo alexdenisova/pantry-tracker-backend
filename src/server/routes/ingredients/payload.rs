@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::database::ingredients::dto::{CreateDto, IngredientDto, IngredientsListDto, UpdateDto};
+use crate::database::ingredients::dto::{CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
@@ -30,6 +30,19 @@ impl From<UpdatePayload> for UpdateDto {
         UpdateDto {
             name: val.name,
             can_be_eaten_raw: val.can_be_eaten_raw,
+        }
+    }
+}
+
+#[derive(Clone, Deserialize, Debug)]
+pub struct ListQueryParams {
+    pub name: Option<String>,
+}
+
+impl From<ListQueryParams> for ListParamsDto {
+    fn from(val: ListQueryParams) -> Self {
+        ListParamsDto {
+            name: val.name,
         }
     }
 }

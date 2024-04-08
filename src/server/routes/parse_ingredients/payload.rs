@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Deserialize, Debug)]
+pub struct ListQueryParams {
+    pub text: String,
+}
+
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct ParsedRecipeIngredient {
     pub amount: Option<f32>,
@@ -9,5 +14,5 @@ pub struct ParsedRecipeIngredient {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct ParseIngredientsResponse {
-    pub ingredients: Vec<ParsedRecipeIngredient>,
+    pub items: Vec<ParsedRecipeIngredient>,
 }

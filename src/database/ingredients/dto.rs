@@ -15,6 +15,11 @@ pub struct UpdateDto {
     pub can_be_eaten_raw: Option<bool>,
 }
 
+#[derive(Deserialize, Debug, Default)]
+pub struct ListParamsDto {
+    pub name: Option<String>,
+}
+
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
 pub struct IngredientDto {
     pub id: Uuid,
