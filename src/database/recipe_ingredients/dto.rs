@@ -7,8 +7,8 @@ use uuid::Uuid;
 pub struct CreateDto {
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
-    pub amount: f32,
-    pub unit: String,
+    pub amount: Option<String>,
+    pub unit: Option<String>,
     pub optional: bool,
 }
 
@@ -19,7 +19,7 @@ pub struct ListParamsDto {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
-    pub amount: Option<f32>,
+    pub amount: Option<String>,
     pub unit: Option<String>,
     pub optional: Option<bool>,
 }
@@ -29,8 +29,8 @@ pub struct RecipeIngredientDto {
     pub id: Uuid,
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
-    pub amount: f32,
-    pub unit: String,
+    pub amount: Option<String>,
+    pub unit: Option<String>,
     pub optional: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,

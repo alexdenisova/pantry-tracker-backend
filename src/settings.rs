@@ -61,20 +61,32 @@ impl Cli {
             .warn(Color::BrightYellow)
             .error(Color::BrightRed);
         if self.debug {
-            Dispatch::new().level(LevelFilter::Debug)
+            Dispatch::new()
+                .level(LevelFilter::Debug)
+                .level_for("html5ever", LevelFilter::Off)
+                .level_for("selectors", LevelFilter::Off)
+                .format(move |out, message, record| {
+                    out.finish(format_args!(
+                        "{} [{}] {}: {}",
+                        Local::now().format("%Y-%m-%d %H:%M:%S MSK"),
+                        colors.color(record.level()),
+                        record.target(),
+                        message,
+                    ));
+                })
         } else {
             Dispatch::new()
                 .level(LevelFilter::Info)
                 .level_for("sqlx::query", LevelFilter::Off)
+                .format(move |out, message, record| {
+                    out.finish(format_args!(
+                        "{} [{}] {}",
+                        Local::now().format("%Y-%m-%d %H:%M:%S MSK"),
+                        colors.color(record.level()),
+                        message,
+                    ));
+                })
         }
-        .format(move |out, message, record| {
-            out.finish(format_args!(
-                "{} [{}] {}",
-                Local::now().format("%Y-%m-%d %H:%M:%S MSK"),
-                colors.color(record.level()),
-                message,
-            ));
-        })
         .chain(std::io::stderr())
         .apply()?;
         Ok(())

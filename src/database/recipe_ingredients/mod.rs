@@ -98,12 +98,8 @@ impl DatabaseCRUD for DBClient {
             })?
             .ok_or(UpdateError::NotFound { id })?;
         let mut recipe_ingredient: ActiveModel = recipe_ingredient.into();
-        if let Some(amount) = request.amount {
-            recipe_ingredient.amount = Set(amount);
-        }
-        if let Some(unit) = request.unit {
-            recipe_ingredient.unit = Set(unit);
-        }
+        recipe_ingredient.amount = Set(request.amount);
+        recipe_ingredient.unit = Set(request.unit);
         if let Some(optional) = request.optional {
             recipe_ingredient.optional = Set(optional);
         }

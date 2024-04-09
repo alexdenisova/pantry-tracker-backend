@@ -39,5 +39,6 @@ serde_json = "1.0.115"
 regex = "1.10.4"
 url = { version = "2.5.0", features = ["serde"] }
 scraper = "0.19.0"
-reqwest = { version = "0.12.3", features = ["blocking"] }
+reqwest = { version = "0.12.3" }
 iso8601 = "0.6.1"
+titlecase = "3.0.0"

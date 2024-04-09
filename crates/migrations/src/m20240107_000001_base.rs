@@ -12,7 +12,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Ingredients::Table)
                     .col(ColumnDef::new(Ingredients::Id).uuid().primary_key())
-                    .col(ColumnDef::new(Ingredients::Name).string().not_null())
+                    .col(ColumnDef::new(Ingredients::Name).string().not_null().unique_key())
                     .col(
                         ColumnDef::new(Ingredients::CanBeEatenRaw)
                             .boolean()
@@ -54,7 +54,12 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(PantryItems::Table)
                     .col(ColumnDef::new(PantryItems::Id).uuid().primary_key())
-                    .col(ColumnDef::new(PantryItems::IngredientId).uuid().not_null().unique_key())
+                    .col(
+                        ColumnDef::new(PantryItems::IngredientId)
+                            .uuid()
+                            .not_null()
+                            .unique_key(),
+                    )
                     .col(ColumnDef::new(PantryItems::PurchaseDate).date())
                     .col(ColumnDef::new(PantryItems::ExpirationDate).date())
                     .col(ColumnDef::new(PantryItems::Quantity).integer())
@@ -135,8 +140,8 @@ impl MigrationTrait for Migration {
                             .uuid()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(RecipeIngredients::Amount).float().not_null())
-                    .col(ColumnDef::new(RecipeIngredients::Unit).string().not_null())
+                    .col(ColumnDef::new(RecipeIngredients::Amount).string())
+                    .col(ColumnDef::new(RecipeIngredients::Unit).string())
                     .col(
                         ColumnDef::new(RecipeIngredients::Optional)
                             .boolean()

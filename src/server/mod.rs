@@ -9,6 +9,8 @@ use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tower_http::cors::{Any, CorsLayer};
 
+use crate::server::routes::parse_recipe_link::ParsedRecipeLinkRouter;
+
 use self::routes::ingredients::IngredientRouter;
 use self::routes::pantry_items::PantryItemRouter;
 use self::routes::parse_ingredients::ParseIngredientsRouter;
@@ -55,6 +57,7 @@ impl Server {
             .nest("/ingredients", IngredientRouter::get())
             .nest("/pantry_items", PantryItemRouter::get())
             .nest("/parse_ingredients", ParseIngredientsRouter::get())
+            .nest("/parse_recipe_link", ParsedRecipeLinkRouter::get())
             .nest("/possible_recipes", PossibleRecipesRouter::list())
             .nest("/recipes", RecipeRouter::get())
             .nest("/recipe_ingredients", RecipeIngredientRouter::get())

@@ -12,11 +12,10 @@ use axum::{
     routing::get,
     Router,
 };
-use regex::Regex;
 use scraper::{Html, Selector};
 use serde_json::json;
 use serde_json::Value;
-use std::num::ParseFloatError;
+use std::borrow::Borrow;
 use thiserror::Error;
 use url::Url;
 use urlencoding::decode;
@@ -34,40 +33,98 @@ impl ParsedRecipeLinkRouter {
         Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<ParsedRecipeLinkResponse>>) {
         if let Ok(link) = decode(&query_params.link) {
-            let xml = reqwest::blocking::get(link.borrow())?.text()?;
-            let fragment = Html::parse_fragment(&xml);
-            if let Ok(selector) = Selector::parse("script") {
-                if let Some(element) = fragment.select(&selector).find(|el| {
-                    el.attr("type") == Some("application/ld+json")
-                        && el.inner_html().contains("recipeIngredient")
-                }) {
-                    let json: serde_json::Value =
-                        serde_json::from_str(&element.text().collect::<Vec<&str>>().join(""))
-                            .unwrap();
-                    if json.is_object() {
-                        json = json.get("@graph").unwrap().clone()
-                        //TODO: change all unwrap to returns
-                    }
-                    json = json
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .find(|&v| {
-                            let otype = v.get("@type").unwrap();
-                            println!("{:?}", otype);
-                            match otype.as_array() {
-                                Some(arr) => arr.contains(&json!("Recipe")),
-                                None => otype.eq(&json!("Recipe")),
-                            }
-                        })
-                        .unwrap()
-                        .clone();
-                    let image = get_image(&json);
+            let json = match get_recipe_json(link.borrow()).await {
+                Ok(res) => res,
+                Err(e) => {
+                    log::warn!("Error getting recipe link: {}", e);
+                    return (StatusCode::UNPROCESSABLE_ENTITY, Json(None));
                 }
-            }
+            };
+            let name = get_name(&json);
+            let cooking_time_mins = get_cook_time(&json);
+            let image = get_image(&json);
+            let ingredients = get_ingredients(&json);
+            let instructions = get_instructions(&json);
+            return (
+                StatusCode::OK,
+                Json(Some(ParsedRecipeLinkResponse {
+                    name,
+                    cooking_time_mins,
+                    instructions,
+                    image,
+                    ingredients,
+                })),
+            );
         }
         (StatusCode::UNPROCESSABLE_ENTITY, Json(None))
     }
+}
+
+#[derive(Error, Debug)]
+pub enum GetRecipeJsonError {
+    #[error("Could not GET {link}: {err}")]
+    LinkUnavailable { link: String, err: String },
+    #[error("Could not parse respone from {link}: {err}")]
+    BadFormat { link: String, err: String },
+}
+
+async fn get_recipe_json(link: &str) -> Result<Value, GetRecipeJsonError> {
+    let response = match reqwest::get(link).await {
+        Ok(res) => res,
+        Err(e) => {
+            return Err(GetRecipeJsonError::LinkUnavailable {
+                link: link.to_owned(),
+                err: e.to_string(),
+            })
+        }
+    };
+    let Ok(xml) = response.text().await else {
+        return Err(GetRecipeJsonError::BadFormat {
+            link: link.to_owned(),
+            err: "No body".to_owned(),
+        });
+    };
+    let html = Html::parse_fragment(&xml);
+    let Ok(selector) = Selector::parse("script") else {
+        return Err(GetRecipeJsonError::BadFormat {
+            link: link.to_owned(),
+            err: "No script elements".to_owned(),
+        });
+    };
+    if let Some(element) = html.select(&selector).find(|el| {
+        el.attr("type") == Some("application/ld+json")
+            && el.inner_html().contains("recipeIngredient")
+    }) {
+        let mut json: serde_json::Value =
+            serde_json::from_str(&element.text().collect::<Vec<&str>>().join("")).unwrap();
+        if json.is_object() {
+            if let Some(graph) = json.get("@graph") {
+                json = graph.clone();
+            } else {
+                return Err(GetRecipeJsonError::BadFormat {
+                    link: link.to_owned(),
+                    err: "Could not parse recipe element".to_owned(),
+                });
+            }
+        }
+        if let Some(arr) = json.as_array() {
+            if let Some(j) = arr.iter().find(|&v| {
+                let Some(otype) = v.get("@type") else {
+                    return false;
+                };
+                match otype.as_array() {
+                    Some(arr) => arr.contains(&json!("Recipe")),
+                    None => otype.eq(&json!("Recipe")),
+                }
+            }) {
+                return Ok(j.clone());
+            }
+        }
+    }
+    Err(GetRecipeJsonError::BadFormat {
+        link: link.to_owned(),
+        err: "No recipe element".to_owned(),
+    })
 }
 
 fn get_name(json: &Value) -> Option<String> {
@@ -76,45 +133,56 @@ fn get_name(json: &Value) -> Option<String> {
             return Some(name.to_owned());
         }
     }
-    return None;
+    None
 }
 
-fn get_cook_time(json: &Value) -> Option<i16> {
+fn get_cook_time(json: &Value) -> Option<u32> {
     if let Some(time) = json.get("totalTime") {
         if let Some(time) = time.as_str() {
             return iso8601_to_mins(time);
         }
     }
-    return None;
+    None
 }
 
 fn get_instructions(json: &Value) -> Option<String> {
-    todo!()
+    if let Some(instructions) = json.get("recipeInstructions") {
+        if let Some(instructions) = instructions.as_array() {
+            let mut result = String::new();
+            for (num, instruct) in instructions.iter().enumerate() {
+                if let Some(text) = instruct.get("text") {
+                    result += &format!("{}. {}\n", num + 1, text.as_str().unwrap());
+                } else {
+                    result += &format!("{}. ---\n", num + 1);
+                }
+            }
+            return Some(result);
+        }
+    }
+    None
 }
 
 fn iso8601_to_mins(duration: &str) -> Option<u32> {
-    if let Ok(duration) = iso8601::duration(duration) {
-        if let iso8601::Duration::YMDHMS {
-            year,
-            month,
-            day,
-            hour,
-            minute,
-            second,
-            millisecond,
-        } = duration
-        {
-            return Some(day * 60 * 60 + hour * 60 + minute + second / 60);
-        }
+    if let Ok(iso8601::Duration::YMDHMS {
+        year: _,
+        month: _,
+        day,
+        hour,
+        minute,
+        second,
+        millisecond: _,
+    }) = iso8601::duration(duration)
+    {
+        return Some(day * 60 * 60 + hour * 60 + minute + second / 60);
     }
-    return None;
+    None
 }
 
 fn get_image(json: &Value) -> Option<Url> {
     if let Some(image) = json.get("image") {
         match image {
             Value::String(s) => return Url::parse(s).ok(),
-            Value::Array(a) => match a.get(0) {
+            Value::Array(a) => match a.first() {
                 Some(img) => match img {
                     Value::String(s) => return Url::parse(s).ok(),
                     Value::Object(obj) => {
@@ -138,7 +206,7 @@ fn get_image(json: &Value) -> Option<Url> {
             _ => return None,
         }
     }
-    return None;
+    None
 }
 
 fn get_ingredients(json: &Value) -> Vec<ParsedRecipeIngredient> {
@@ -153,5 +221,5 @@ fn get_ingredients(json: &Value) -> Vec<ParsedRecipeIngredient> {
             return parse_ingredients(ingredients);
         }
     }
-    return Vec::new();
+    Vec::new()
 }

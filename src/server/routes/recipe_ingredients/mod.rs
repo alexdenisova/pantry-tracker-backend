@@ -5,7 +5,8 @@ use axum::{
     Router,
 };
 use payload::{
-    CreatePayload, RecipeIngredientListResponse, RecipeIngredientResponse, ListQueryParams, UpdatePayload,
+    CreatePayload, ListQueryParams, RecipeIngredientListResponse, RecipeIngredientResponse,
+    UpdatePayload,
 };
 
 use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
@@ -21,7 +22,8 @@ impl RecipeIngredientRouter {
         Router::new()
             .route(
                 "/",
-                get(RecipeIngredientRouter::list_recipe_ingredients).post(RecipeIngredientRouter::create_recipe_ingredient),
+                get(RecipeIngredientRouter::list_recipe_ingredients)
+                    .post(RecipeIngredientRouter::create_recipe_ingredient),
             )
             .route(
                 "/:id",
@@ -35,9 +37,16 @@ impl RecipeIngredientRouter {
         State(state): State<AppState>,
         Json(payload): Json<CreatePayload>,
     ) -> (StatusCode, Json<Option<RecipeIngredientResponse>>) {
-        match state.db_client.create_recipe_ingredient(payload.into()).await {
+        match state
+            .db_client
+            .create_recipe_ingredient(payload.into())
+            .await
+        {
             Ok(recipe_ingredient) => {
-                log::info!("Recipe ingredient with id {:?} created", recipe_ingredient.id.to_string());
+                log::info!(
+                    "Recipe ingredient with id {:?} created",
+                    recipe_ingredient.id.to_string()
+                );
                 (StatusCode::CREATED, Json(Some(recipe_ingredient.into())))
             }
             Err(err) => {
@@ -56,9 +65,16 @@ impl RecipeIngredientRouter {
         State(state): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<RecipeIngredientListResponse>>) {
-        match state.db_client.list_recipe_ingredients(query_params.into()).await {
+        match state
+            .db_client
+            .list_recipe_ingredients(query_params.into())
+            .await
+        {
             Ok(recipe_ingredients) => {
-                log::info!("{:?} recipe ingredients collected", recipe_ingredients.items.len());
+                log::info!(
+                    "{:?} recipe ingredients collected",
+                    recipe_ingredients.items.len()
+                );
                 (StatusCode::OK, Json(Some(recipe_ingredients.into())))
             }
             Err(err) => {
@@ -94,7 +110,11 @@ impl RecipeIngredientRouter {
         Path(id): Path<Uuid>,
         Json(payload): Json<UpdatePayload>,
     ) -> (StatusCode, Json<Option<RecipeIngredientResponse>>) {
-        match state.db_client.update_recipe_ingredient(id, payload.into()).await {
+        match state
+            .db_client
+            .update_recipe_ingredient(id, payload.into())
+            .await
+        {
             Ok(recipe_ingredient) => {
                 log::info!("Updated recipe ingredient with id {id:?}");
                 (StatusCode::OK, Json(Some(recipe_ingredient.into())))
@@ -111,7 +131,10 @@ impl RecipeIngredientRouter {
         }
     }
 
-    async fn delete_recipe_ingredient(State(state): State<AppState>, Path(id): Path<Uuid>) -> StatusCode {
+    async fn delete_recipe_ingredient(
+        State(state): State<AppState>,
+        Path(id): Path<Uuid>,
+    ) -> StatusCode {
         match state.db_client.delete_recipe_ingredient(id).await {
             Ok(()) => {
                 log::info!("Deleted recipe ingredient with id {:?}", id);

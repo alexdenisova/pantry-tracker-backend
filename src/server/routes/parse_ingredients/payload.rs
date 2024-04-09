@@ -7,7 +7,7 @@ pub struct ListQueryParams {
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct ParsedRecipeIngredient {
-    pub amount: Option<f32>,
+    pub amount: Option<String>,
     pub unit: Option<String>,
     pub name: String,
 }

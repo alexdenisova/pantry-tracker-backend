@@ -1,8 +1,11 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use titlecase::titlecase;
 use uuid::Uuid;
 
-use crate::database::ingredients::dto::{CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto};
+use crate::database::ingredients::dto::{
+    CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto,
+};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
@@ -13,7 +16,7 @@ pub struct CreatePayload {
 impl From<CreatePayload> for CreateDto {
     fn from(val: CreatePayload) -> Self {
         CreateDto {
-            name: val.name,
+            name: titlecase(&val.name),
             can_be_eaten_raw: val.can_be_eaten_raw.unwrap_or(false),
         }
     }
@@ -28,7 +31,7 @@ pub struct UpdatePayload {
 impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
         UpdateDto {
-            name: val.name,
+            name: val.name.map(|x| titlecase(&x)),
             can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }
@@ -41,9 +44,7 @@ pub struct ListQueryParams {
 
 impl From<ListQueryParams> for ListParamsDto {
     fn from(val: ListQueryParams) -> Self {
-        ListParamsDto {
-            name: val.name,
-        }
+        ListParamsDto { name: val.name }
     }
 }
 
