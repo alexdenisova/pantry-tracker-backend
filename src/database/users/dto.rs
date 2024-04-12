@@ -1,7 +1,8 @@
 use chrono::{NaiveDateTime, Utc};
-use db_entities::users::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use db_entities::users::Model;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
@@ -19,6 +20,11 @@ pub struct UserDto {
     pub name: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct ListParamsDto {
+    pub name: Option<String>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]

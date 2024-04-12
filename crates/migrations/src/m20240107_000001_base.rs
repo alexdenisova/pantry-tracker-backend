@@ -12,13 +12,13 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Ingredients::Table)
                     .col(ColumnDef::new(Ingredients::Id).uuid().primary_key())
-                    .col(ColumnDef::new(Ingredients::Name).string().not_null().unique_key())
                     .col(
-                        ColumnDef::new(Ingredients::CanBeEatenRaw)
-                            .boolean()
-                            .default(false)
-                            .not_null(),
+                        ColumnDef::new(Ingredients::Name)
+                            .string()
+                            .not_null()
+                            .unique_key(),
                     )
+                    .col(ColumnDef::new(Ingredients::CanBeEatenRaw).boolean())
                     .col(
                         ColumnDef::new(Ingredients::CreatedAt)
                             .timestamp()

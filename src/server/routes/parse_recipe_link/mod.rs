@@ -1,10 +1,5 @@
 mod payload;
 
-use self::payload::{ListQueryParams, ParsedRecipeLinkResponse};
-use crate::server::routes::parse_ingredients::parse_ingredients;
-use crate::server::routes::parse_ingredients::payload::ParsedRecipeIngredient;
-use crate::server::AppState;
-
 use axum::extract::Query;
 use axum::{
     extract::{Json, State},
@@ -12,6 +7,7 @@ use axum::{
     routing::get,
     Router,
 };
+use htmlentity::entity::ICodedDataTrait;
 use scraper::{Html, Selector};
 use serde_json::json;
 use serde_json::Value;
@@ -19,6 +15,11 @@ use std::borrow::Borrow;
 use thiserror::Error;
 use url::Url;
 use urlencoding::decode;
+
+use self::payload::{ListQueryParams, ParsedRecipeLinkResponse};
+use crate::server::routes::parse_ingredients::parse_ingredients;
+use crate::server::routes::parse_ingredients::payload::ParsedRecipeIngredient;
+use crate::server::AppState;
 
 pub struct ParsedRecipeLinkRouter {}
 
@@ -151,7 +152,13 @@ fn get_instructions(json: &Value) -> Option<String> {
             let mut result = String::new();
             for (num, instruct) in instructions.iter().enumerate() {
                 if let Some(text) = instruct.get("text") {
-                    result += &format!("{}. {}\n", num + 1, text.as_str().unwrap());
+                    result += &format!(
+                        "{}. {}\n",
+                        num + 1,
+                        htmlentity::entity::decode(text.as_str().unwrap().as_bytes())
+                            .to_string()
+                            .unwrap()
+                    );
                 } else {
                     result += &format!("{}. ---\n", num + 1);
                 }

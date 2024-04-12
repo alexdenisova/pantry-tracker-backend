@@ -1,19 +1,18 @@
-use async_trait::async_trait;
-use chrono::Utc;
-use db_entities::recipe_ingredients::{ActiveModel, Column, Entity, Model};
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
-use uuid::Uuid;
-
 pub mod dto;
 
-use crate::database::{
-    errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
-    DBClient,
-};
+use async_trait::async_trait;
+use chrono::Utc;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
+use uuid::Uuid;
 
 use self::dto::{
     CreateDto, ListParamsDto, RecipeIngredientDto, RecipeIngredientsListDto, UpdateDto,
 };
+use crate::database::{
+    errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
+    DBClient,
+};
+use db_entities::recipe_ingredients::{ActiveModel, Column, Entity, Model};
 
 #[async_trait]
 pub trait DatabaseCRUD {
@@ -75,7 +74,7 @@ impl DatabaseCRUD for DBClient {
                 Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
                 None => Entity::find(),
             }
-            .order_by_desc(Column::Id)
+            .order_by_desc(Column::UpdatedAt)
             .all(&self.database_connection)
             .await
             .map_err(|err| ListError::Unexpected { error: err.into() })?
@@ -98,11 +97,10 @@ impl DatabaseCRUD for DBClient {
             })?
             .ok_or(UpdateError::NotFound { id })?;
         let mut recipe_ingredient: ActiveModel = recipe_ingredient.into();
+        recipe_ingredient.ingredient_id = Set(request.ingredient_id);
         recipe_ingredient.amount = Set(request.amount);
         recipe_ingredient.unit = Set(request.unit);
-        if let Some(optional) = request.optional {
-            recipe_ingredient.optional = Set(optional);
-        }
+        recipe_ingredient.optional = Set(request.optional);
         recipe_ingredient.updated_at = Set(Utc::now().naive_utc());
 
         Ok(Entity::update(recipe_ingredient)

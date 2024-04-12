@@ -1,7 +1,8 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc};
-use db_entities::pantry_items::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use db_entities::pantry_items::Model;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
@@ -16,6 +17,8 @@ pub struct CreateDto {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
+    pub ingredient_id: Uuid,
+    pub user_id: Uuid,
     pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<NaiveDate>,
     pub quantity: Option<i32>,

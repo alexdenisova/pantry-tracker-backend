@@ -4,21 +4,22 @@ mod state;
 use axum::routing::get;
 use axum::{extract::State, http::StatusCode, serve, Router};
 use http::{header::CONTENT_TYPE, Method};
-pub use state::AppState;
 use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::server::routes::parse_recipe_link::ParsedRecipeLinkRouter;
+use crate::server::routes::login::LoginRouter;
 
 use self::routes::ingredients::IngredientRouter;
 use self::routes::pantry_items::PantryItemRouter;
 use self::routes::parse_ingredients::ParseIngredientsRouter;
+use self::routes::parse_recipe_link::ParsedRecipeLinkRouter;
 use self::routes::possible_recipes::PossibleRecipesRouter;
 use self::routes::recipe_ingredients::RecipeIngredientRouter;
 use self::routes::recipe_users::RecipeUserRouter;
 use self::routes::recipes::RecipeRouter;
 use self::routes::users::UserRouter;
+pub use state::AppState;
 
 pub type ServerResult<T> = Result<T, ServerError>;
 
@@ -54,6 +55,7 @@ impl Server {
 
         let router: Router = Router::new()
             .route("/health", get(health))
+            .nest("/login", LoginRouter::get())
             .nest("/ingredients", IngredientRouter::get())
             .nest("/pantry_items", PantryItemRouter::get())
             .nest("/parse_ingredients", ParseIngredientsRouter::get())

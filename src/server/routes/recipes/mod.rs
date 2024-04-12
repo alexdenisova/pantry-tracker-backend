@@ -1,9 +1,12 @@
+mod payload;
+
 use axum::{
     extract::{Json, Path, Query, State},
     http::StatusCode,
     routing::get,
     Router,
 };
+use axum_extra::extract::CookieJar;
 use color_eyre::Result as AnyResult;
 use payload::{CreatePayload, ListQueryParams, RecipeListResponse, RecipeResponse, UpdatePayload};
 use urlencoding::decode;
@@ -11,10 +14,9 @@ use urlencoding::decode;
 use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
 use crate::database::recipe_ingredients::dto::RecipeIngredientsListDto;
 use crate::database::recipes::dto::RecipesListDto;
+use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
 use uuid::Uuid;
-
-mod payload;
 
 pub struct RecipeRouter {}
 
@@ -35,47 +37,64 @@ impl RecipeRouter {
 
     async fn create_recipe(
         State(state): State<AppState>,
+        jar: CookieJar,
         Json(payload): Json<CreatePayload>,
     ) -> (StatusCode, Json<Option<RecipeResponse>>) {
-        match state.db_client.create_recipe(payload.into()).await {
-            Ok(recipe) => {
-                log::info!(
-                    "Recipe with id {:?} created",
-                    recipe.id.to_string()
-                );
-                (StatusCode::CREATED, Json(Some(recipe.into())))
-            }
-            Err(err) => {
-                if let CreateError::AlreadyExist { .. } = err {
-                    log::error!("{}", err.to_string());
-                    (StatusCode::CONFLICT, Json(None))
-                } else {
-                    log::error!("{}", err.to_string());
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(None))
+        if let Some(session_id) = jar.get(COOKIE_KEY) {
+            if let Ok(true) = state.session_is_valid(session_id.value_trimmed()).await {
+                match state.db_client.create_recipe(payload.into()).await {
+                    Ok(recipe) => {
+                        log::info!("Recipe with id {:?} created", recipe.id.to_string());
+                        return (StatusCode::CREATED, Json(Some(recipe.into())));
+                    }
+                    Err(err) => {
+                        if let CreateError::AlreadyExist { .. } = err {
+                            log::error!("{}", err.to_string());
+                            return (StatusCode::CONFLICT, Json(None));
+                        }
+                        log::error!("{}", err.to_string());
+                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
+                    }
                 }
             }
         }
+        (StatusCode::UNAUTHORIZED, Json(None))
     }
 
     async fn list_recipes(
         State(state): State<AppState>,
+        jar: CookieJar,
         Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<RecipeListResponse>>) {
-        let ingredient_ids = query_params.ingredient_ids.clone();
-        match state.db_client.list_recipes(query_params.into()).await {
-            Ok(recipes) => {
-                if let Some(ingredient_ids) = ingredient_ids {
-                    return Self::list_recipes_with_ingredients(state, ingredient_ids, recipes)
-                        .await;
+        println!("inside");
+        if let Some(session_id) = jar.get(COOKIE_KEY) {
+            if let Ok(user_id) = state.get_sessions_user(session_id.value_trimmed()).await {
+                let ingredient_ids = query_params.ingredient_ids.clone();
+                match state
+                    .db_client
+                    .list_recipes(query_params.into_dto(user_id))
+                    .await
+                {
+                    Ok(recipes) => {
+                        if let Some(ingredient_ids) = ingredient_ids {
+                            return Self::list_recipes_with_ingredients(
+                                state,
+                                ingredient_ids,
+                                recipes,
+                            )
+                            .await;
+                        }
+                        log::info!("{:?} recipes collected", recipes.items.len());
+                        return (StatusCode::OK, Json(Some(recipes.into())));
+                    }
+                    Err(err) => {
+                        log::error!("{}", err.to_string());
+                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
+                    }
                 }
-                log::info!("{:?} recipes collected", recipes.items.len());
-                (StatusCode::OK, Json(Some(recipes.into())))
-            }
-            Err(err) => {
-                log::error!("{}", err.to_string());
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(None))
             }
         }
+        (StatusCode::UNAUTHORIZED, Json(None))
     }
 
     async fn list_recipes_with_ingredients(
@@ -132,10 +151,7 @@ impl RecipeRouter {
             .await
         {
             Ok(recipe_ingredients) => {
-                log::info!(
-                    "{:?} recipes collected",
-                    recipe_ingredients.items.len()
-                );
+                log::info!("{:?} recipes collected", recipe_ingredients.items.len());
                 Ok(recipe_ingredients)
             }
             Err(err) => {

@@ -1,6 +1,5 @@
-use crate::{
-    database::recipe_ingredients::dto::ListParamsDto as RecipeIngredientListDto, server::AppState,
-};
+mod payload;
+
 use axum::{
     extract::{Json, Query, State},
     http::StatusCode,
@@ -9,8 +8,9 @@ use axum::{
 };
 
 use self::payload::{ListQueryParams, PossibleRecipesResponse};
-
-mod payload;
+use crate::{
+    database::recipe_ingredients::dto::ListParamsDto as RecipeIngredientListDto, server::AppState,
+};
 
 pub struct PossibleRecipesRouter {}
 

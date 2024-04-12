@@ -1,17 +1,16 @@
+pub mod dto;
+
 use async_trait::async_trait;
-use db_entities::ingredients::{ActiveModel, Column, Entity, Model};
-use migrations::{Expr, Func};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
-pub mod dto;
-
+use self::dto::{CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto};
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
 };
-
-use self::dto::{CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto};
+use db_entities::ingredients::{ActiveModel, Column, Entity, Model};
+use migrations::{Expr, Func};
 
 #[async_trait]
 pub trait DatabaseCRUD {
@@ -71,7 +70,7 @@ impl DatabaseCRUD for DBClient {
                 None => Entity::find(),
             }
             .order_by_desc(Column::Name)
-            .order_by_desc(Column::Id)
+            .order_by_desc(Column::CreatedAt)
             .all(&self.database_connection)
             .await
             .map_err(|err| ListError::Unexpected { error: err.into() })?
@@ -94,12 +93,9 @@ impl DatabaseCRUD for DBClient {
             })?
             .ok_or(UpdateError::NotFound { id })?;
         let mut ingredient: ActiveModel = ingredient.into();
-        if let Some(name) = request.name {
-            ingredient.name = Set(name);
-        }
-        if let Some(can_be_eaten_raw) = request.can_be_eaten_raw {
-            ingredient.can_be_eaten_raw = Set(can_be_eaten_raw);
-        }
+        ingredient.name = Set(request.name);
+        ingredient.can_be_eaten_raw = Set(request.can_be_eaten_raw);
+
         Ok(Entity::update(ingredient)
             .filter(Column::Id.eq(id))
             .exec(&self.database_connection)

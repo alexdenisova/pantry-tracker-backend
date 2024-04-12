@@ -1,17 +1,18 @@
 use chrono::{NaiveDateTime, Utc};
-use db_entities::ingredients::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use db_entities::ingredients::Model;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
     pub name: String,
-    pub can_be_eaten_raw: bool,
+    pub can_be_eaten_raw: Option<bool>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
-    pub name: Option<String>,
+    pub name: String,
     pub can_be_eaten_raw: Option<bool>,
 }
 
@@ -24,7 +25,7 @@ pub struct ListParamsDto {
 pub struct IngredientDto {
     pub id: Uuid,
     pub name: String,
-    pub can_be_eaten_raw: bool,
+    pub can_be_eaten_raw: Option<bool>,
     pub created_at: NaiveDateTime,
 }
 

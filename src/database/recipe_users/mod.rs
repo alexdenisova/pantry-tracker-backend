@@ -1,16 +1,15 @@
+pub mod dto;
+
 use async_trait::async_trait;
-use db_entities::recipe_users::{ActiveModel, Column, Entity, Model};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
-pub mod dto;
-
+use self::dto::{CreateDto, ListParamsDto, RecipeUserDto, RecipeUsersListDto};
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError},
     DBClient,
 };
-
-use self::dto::{CreateDto, ListParamsDto, RecipeUserDto, RecipeUsersListDto};
+use db_entities::recipe_users::{ActiveModel, Column, Entity, Model};
 
 #[async_trait]
 pub trait DatabaseCRUD {
@@ -61,7 +60,7 @@ impl DatabaseCRUD for DBClient {
                 Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
                 None => Entity::find(),
             }
-            .order_by_desc(Column::Id)
+            .order_by_desc(Column::CreatedAt)
             .all(&self.database_connection)
             .await
             .map_err(|err| ListError::Unexpected { error: err.into() })?

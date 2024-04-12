@@ -1,7 +1,3 @@
-use crate::database::errors::HealthcheckError;
-use async_trait::async_trait;
-use sea_orm::DatabaseConnection;
-
 pub mod errors;
 pub mod ingredients;
 pub mod pantry_items;
@@ -9,6 +5,10 @@ pub mod recipe_ingredients;
 pub mod recipe_users;
 pub mod recipes;
 pub mod users;
+
+use crate::database::errors::HealthcheckError;
+use async_trait::async_trait;
+use sea_orm::DatabaseConnection;
 
 pub struct DBClient {
     database_connection: DatabaseConnection,

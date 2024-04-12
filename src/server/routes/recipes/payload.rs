@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use titlecase::titlecase;
 use url::Url;
 use uuid::Uuid;
 
@@ -20,7 +21,7 @@ pub struct CreatePayload {
 impl From<CreatePayload> for CreateDto {
     fn from(val: CreatePayload) -> Self {
         CreateDto {
-            name: val.name,
+            name: titlecase(&val.name),
             cooking_time_mins: val.cooking_time_mins,
             link: val.link.map(|url| url.to_string()),
             instructions: val.instructions,
@@ -31,7 +32,7 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
-    pub name: Option<String>,
+    pub name: String,
     pub cooking_time_mins: Option<i32>,
     pub link: Option<Url>,
     pub instructions: Option<String>,
@@ -57,11 +58,12 @@ pub struct ListQueryParams {
     pub ingredient_ids: Option<String>, // urlencoded array of ingredient_ids
 }
 
-impl From<ListQueryParams> for ListParamsDto {
-    fn from(val: ListQueryParams) -> Self {
+impl ListQueryParams {
+    pub fn into_dto(self, user_id: Option<Uuid>) -> ListParamsDto {
         ListParamsDto {
-            name_contains: val.name_contains,
-            cooking_time_mins: val.cooking_time_mins,
+            name_contains: self.name_contains,
+            cooking_time_mins: self.cooking_time_mins,
+            user_id,
         }
     }
 }

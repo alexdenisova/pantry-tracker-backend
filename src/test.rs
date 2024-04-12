@@ -1,18 +1,19 @@
-use crate::database::DBTrait;
 use chrono::NaiveDate;
 use color_eyre::Result as AnyResult;
+
+use crate::database::DBTrait;
 
 pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<()> {
     let chicken = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Chicken".to_owned(),
-            can_be_eaten_raw: false,
+            can_be_eaten_raw: Some(false),
         })
         .await?;
     let rice = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Rice".to_owned(),
-            can_be_eaten_raw: false,
+            can_be_eaten_raw: Some(false),
         })
         .await?;
 

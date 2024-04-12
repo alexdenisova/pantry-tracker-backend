@@ -1,16 +1,18 @@
+mod payload;
+
+use axum::extract::Query;
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
     routing::get,
     Router,
 };
-use payload::{CreatePayload, UpdatePayload, UserResponse, UsersListResponse};
-
-use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
-use crate::server::state::AppState;
 use uuid::Uuid;
 
-mod payload;
+use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
+use crate::server::routes::users::payload::ListQueryParams;
+use crate::server::state::AppState;
+use payload::{CreatePayload, UpdatePayload, UserResponse, UsersListResponse};
 
 pub struct UserRouter {}
 
@@ -52,8 +54,9 @@ impl UserRouter {
 
     async fn list_users(
         State(state): State<AppState>,
+        Query(query_params): Query<ListQueryParams>,
     ) -> (StatusCode, Json<Option<UsersListResponse>>) {
-        match state.db_client.list_users().await {
+        match state.db_client.list_users(query_params.into()).await {
             Ok(users) => {
                 log::info!("{:?} users collected", users.items.len());
                 (StatusCode::OK, Json(Some(users.into())))

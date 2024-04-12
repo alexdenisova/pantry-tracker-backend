@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
+
 use crate::server::routes::parse_ingredients::payload::ParsedRecipeIngredient;
 
 #[derive(Clone, Deserialize, Debug)]

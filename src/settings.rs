@@ -4,6 +4,9 @@ use color_eyre::Result as AnyResult;
 use fern::colors::{Color, ColoredLevelConfig};
 use fern::Dispatch;
 use log::LevelFilter;
+use tokio::sync::mpsc::Sender;
+
+use crate::redis::{new_redis_sender, RedisClient, RedisCommand};
 
 const DEFAULT_DATABASE_URL: &str = "postgres://postgres:postgres@localhost:5432/postgres";
 const DEFAULT_SOCKET: &str = "localhost:8080";
@@ -15,6 +18,8 @@ pub struct Cli {
     pub command: Commands,
     #[command(flatten)]
     pub database: DatabaseArguments,
+    #[command(flatten)]
+    redis: RedisArguments,
     /// Set debug log level
     #[arg(long, short = 'd', default_value = "false", env = "APP__DEBUG")]
     debug: bool,
@@ -51,6 +56,37 @@ pub struct DatabaseArguments {
         global = true
     )]
     pub url: String,
+}
+
+#[derive(Debug, Args)]
+pub struct RedisArguments {
+    /// Redis username
+    #[arg(long = "redis-username", env = "REDIS_USERNAME")]
+    username: Option<String>,
+    /// Redis password
+    #[arg(long = "redis-password", env = "REDIS_PASSWORD")]
+    pub password: Option<String>,
+    /// Redis URL
+    #[arg(long = "redis-host", env = "REDIS_HOST")]
+    host: String,
+    /// Redis port
+    #[arg(long = "redis-port", default_value = "6379", env = "REDIS_PORT")]
+    port: u16,
+    /// Redis database
+    #[arg(long = "redis-db", default_value = "1", env = "REDIS_DATABASE")]
+    db: i64,
+}
+
+impl RedisArguments {
+    pub fn client(&self) -> AnyResult<RedisClient> {
+        RedisClient::new(
+            self.host.clone(),
+            self.port,
+            self.db,
+            self.username.clone(),
+            self.password.clone(),
+        )
+    }
 }
 
 impl Cli {
@@ -90,5 +126,9 @@ impl Cli {
         .chain(std::io::stderr())
         .apply()?;
         Ok(())
+    }
+    pub async fn redis_sender(&self) -> AnyResult<Sender<RedisCommand>> {
+        let redis_client = self.redis.client()?;
+        Ok(new_redis_sender(redis_client).await)
     }
 }

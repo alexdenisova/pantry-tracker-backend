@@ -1,7 +1,8 @@
 use chrono::{NaiveDateTime, Utc};
-use db_entities::recipes::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use db_entities::recipes::Model;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
@@ -16,11 +17,12 @@ pub struct CreateDto {
 pub struct ListParamsDto {
     pub name_contains: Option<String>,
     pub cooking_time_mins: Option<i32>,
+    pub user_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
-    pub name: Option<String>,
+    pub name: String,
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,

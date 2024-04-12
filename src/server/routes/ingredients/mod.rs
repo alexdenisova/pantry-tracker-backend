@@ -1,3 +1,5 @@
+mod payload;
+
 use axum::extract::Query;
 use axum::{
     extract::{Json, Path, State},
@@ -5,14 +7,13 @@ use axum::{
     routing::get,
     Router,
 };
-use payload::{CreatePayload, IngredientListResponse, IngredientResponse, UpdatePayload};
-
-use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
-use crate::server::routes::ingredients::payload::ListQueryParams;
-use crate::server::state::AppState;
 use uuid::Uuid;
 
-mod payload;
+use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
+use crate::server::state::AppState;
+use payload::{
+    CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams, UpdatePayload,
+};
 
 pub struct IngredientRouter {}
 

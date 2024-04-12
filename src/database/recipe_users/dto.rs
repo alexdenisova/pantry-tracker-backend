@@ -1,7 +1,8 @@
 use chrono::{NaiveDateTime, Utc};
-use db_entities::recipe_users::Model;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use db_entities::recipe_users::Model;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {

@@ -1,19 +1,21 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
-use crate::server::AppState;
+mod database;
+mod redis;
+mod server;
+mod settings;
+mod test;
+
 use clap::Parser;
 use color_eyre::Result as AnyResult;
 use dotenvy::dotenv;
 use migrations::{Migrator, MigratorTrait};
 use sea_orm::Database;
 use server::Server;
-use settings::{Cli, Commands};
 
-mod database;
-mod server;
-mod settings;
-mod test;
+use crate::server::AppState;
+use settings::{Cli, Commands};
 
 #[tokio::main]
 async fn main() -> AnyResult<()> {
@@ -21,10 +23,12 @@ async fn main() -> AnyResult<()> {
     let cli = Cli::parse();
     cli.setup_logging()?;
 
+    let redis_sender = cli.redis_sender().await?;
     let db_connection = Database::connect(cli.database.url).await?;
+
     match cli.command {
         Commands::Run(args) => {
-            let state = AppState::new(db_connection);
+            let state = AppState::new(db_connection, redis_sender);
             let server = Server::new(state);
 
             server.run(args.socket).await.unwrap();

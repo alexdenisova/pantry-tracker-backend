@@ -1,37 +1,56 @@
 ---
 version: "2"
 services:
-  # app:
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     migrations:
-  #       condition: service_completed_successfully
-  #   build:
-  #     context: .
-  #     dockerfile: dev.dockerfile
-  #   command: run
-  #   healthcheck:
-  #     test: 
-  #       - CMD
-  #       - curl
-  #       - localhost:8080/health  
-  #       - --fail
-  #       - --silent
-  #     interval: 10s
-  #     timeout: 1s
-  #     retries: 3
-  #   environment:
-  #     APP__DATABASE_URL: &APP__DATABASE_URL "postgres://postgres:postgres@postgres:5432/food_db"
-  #     APP__SOCKET: "0.0.0.0:8080"
-  #   ports:
-  #     - "8080:8080/tcp"
-  #   volumes:
-  #     - ./crates:/app/crates:ro
-  #     - ./src:/app/src:ro
-  #     - ./target-dev:/app/target:rw
-  #     - ./Cargo.lock:/app/Cargo.lock:ro
-  #     - ./Cargo.toml:/app/Cargo.toml:ro
+  nginx:
+    image: nginx:1-alpine
+    restart: always
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      NGINX_PORT: "8080"
+      ROOT_PATH: '/api'
+      FRONTEND_PORT: 5173
+    ports:
+      - "8080:8080/tcp"
+    volumes:
+      - "./deploy/docker/nginx.template:/etc/nginx/templates/default.conf.template:ro"
+
+  app:
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # migrations:
+      #   condition: service_completed_successfully
+    build:
+      context: .
+      dockerfile: dev.dockerfile
+    command: run
+    healthcheck:
+      test: 
+        - CMD
+        - curl
+        - localhost:8080/health  
+        - --fail
+        - --silent
+      interval: 10s
+      timeout: 1s
+      retries: 3
+    environment: &environment
+      APP__DATABASE_URL: "postgres://postgres:postgres@postgres:5432/postgres"
+      APP__SOCKET: "0.0.0.0:8080"
+      REDIS_HOST: redis
+      APP__DEBUG: true
+    ports:
+      - "8082:8080/tcp"
+    volumes:
+      - ./crates:/app/crates:ro
+      - ./src:/app/src:ro
+      - ./target-dev:/app/target:rw
+      - ./Cargo.lock:/app/Cargo.lock:ro
+      - ./Cargo.toml:/app/Cargo.toml:ro
   
   # migrations:
   #   build:
@@ -41,8 +60,7 @@ services:
   #   depends_on:
   #     postgres:
   #       condition: service_healthy
-  #   environment:
-  #     APP__DATABASE_URL: *APP__DATABASE_URL
+  #   environment: *environment
   #   volumes:
   #     - ./crates:/app/crates:ro
   #     - ./src:/app/src:ro
@@ -64,3 +82,15 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432/tcp"
+  
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning

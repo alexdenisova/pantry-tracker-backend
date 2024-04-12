@@ -1,16 +1,16 @@
+mod payload;
+
 use axum::{
     extract::{Json, Path, Query, State},
     http::StatusCode,
     routing::get,
     Router,
 };
-use payload::{CreatePayload, ListQueryParams, RecipeUserListResponse, RecipeUserResponse};
+use uuid::Uuid;
 
 use crate::database::errors::{CreateError, DeleteError, GetError};
 use crate::server::state::AppState;
-use uuid::Uuid;
-
-mod payload;
+use payload::{CreatePayload, ListQueryParams, RecipeUserListResponse, RecipeUserResponse};
 
 pub struct RecipeUserRouter {}
 

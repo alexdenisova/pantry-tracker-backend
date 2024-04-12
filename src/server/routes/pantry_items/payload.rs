@@ -33,6 +33,8 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
+    pub ingredient_id: Uuid,
+    pub user_id: Uuid,
     pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<NaiveDate>,
     pub quantity: Option<i32>,
@@ -43,6 +45,8 @@ pub struct UpdatePayload {
 impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
         UpdateDto {
+            ingredient_id: val.ingredient_id,
+            user_id: val.user_id,
             purchase_date: val.purchase_date,
             expiration_date: val.expiration_date,
             quantity: val.quantity,
@@ -51,6 +55,55 @@ impl From<UpdatePayload> for UpdateDto {
         }
     }
 }
+
+// TODO:
+// #[derive(Deserialize, Serialize, Debug)]
+// pub struct CreatePayload {
+//     pub ingredient_id: Uuid,
+//     pub purchase_date: Option<NaiveDate>,
+//     pub expiration_date: Option<NaiveDate>,
+//     pub quantity: Option<i32>,
+//     pub weight_grams: Option<i32>,
+//     pub volume_milli_litres: Option<i32>,
+// }
+
+// impl CreatePayload {
+//     pub fn to_dto(self, user_id: Uuid) -> CreateDto {
+//         CreateDto {
+//             ingredient_id: self.ingredient_id,
+//             user_id,
+//             purchase_date: self.purchase_date,
+//             expiration_date: self.expiration_date,
+//             quantity: self.quantity,
+//             weight_grams: self.weight_grams,
+//             volume_milli_litres: self.volume_milli_litres,
+//         }
+//     }
+// }
+
+// #[derive(Deserialize, Serialize, Debug)]
+// pub struct UpdatePayload {
+//     pub ingredient_id: Uuid,
+//     pub purchase_date: Option<NaiveDate>,
+//     pub expiration_date: Option<NaiveDate>,
+//     pub quantity: Option<i32>,
+//     pub weight_grams: Option<i32>,
+//     pub volume_milli_litres: Option<i32>,
+// }
+
+// impl UpdatePayload {
+//     pub fn to_dto(self, user_id: Uuid) -> UpdateDto {
+//         UpdateDto {
+//             ingredient_id: self.ingredient_id,
+//             user_id,
+//             purchase_date: self.purchase_date,
+//             expiration_date: self.expiration_date,
+//             quantity: self.quantity,
+//             weight_grams: self.weight_grams,
+//             volume_milli_litres: self.volume_milli_litres,
+//         }
+//     }
+// }
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {

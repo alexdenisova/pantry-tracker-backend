@@ -29,14 +29,16 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
+    pub ingredient_id: Uuid,
     pub amount: Option<String>,
     pub unit: Option<String>,
-    pub optional: Option<bool>,
+    pub optional: bool,
 }
 
 impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
         UpdateDto {
+            ingredient_id: val.ingredient_id,
             amount: val.amount,
             unit: val.unit,
             optional: val.optional,

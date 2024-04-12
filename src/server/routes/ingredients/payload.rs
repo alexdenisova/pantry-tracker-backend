@@ -17,21 +17,21 @@ impl From<CreatePayload> for CreateDto {
     fn from(val: CreatePayload) -> Self {
         CreateDto {
             name: titlecase(&val.name),
-            can_be_eaten_raw: val.can_be_eaten_raw.unwrap_or(false),
+            can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
-    pub name: Option<String>,
+    pub name: String,
     pub can_be_eaten_raw: Option<bool>,
 }
 
 impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
         UpdateDto {
-            name: val.name.map(|x| titlecase(&x)),
+            name: val.name,
             can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }
@@ -52,7 +52,7 @@ impl From<ListQueryParams> for ListParamsDto {
 pub struct IngredientResponse {
     pub id: Uuid,
     pub name: String,
-    pub can_be_eaten_raw: bool,
+    pub can_be_eaten_raw: Option<bool>,
     pub created_at: NaiveDateTime,
 }
 

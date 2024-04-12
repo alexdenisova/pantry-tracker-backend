@@ -8,7 +8,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub name: String,
-    pub can_be_eaten_raw: bool,
+    pub can_be_eaten_raw: Option<bool>,
     pub created_at: DateTime,
 }
 

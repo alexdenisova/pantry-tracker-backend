@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::database::pantry_items::dto::ListParamsDto as PantryItemsListParamsDto;
 use crate::database::recipe_users::dto::ListParamsDto as RecipeUsersListParamsDto;
 
+// TODO: delete this
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
     pub user_id: Uuid,
