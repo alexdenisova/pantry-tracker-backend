@@ -54,12 +54,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(PantryItems::Table)
                     .col(ColumnDef::new(PantryItems::Id).uuid().primary_key())
-                    .col(
-                        ColumnDef::new(PantryItems::IngredientId)
-                            .uuid()
-                            .not_null()
-                            .unique_key(),
-                    )
+                    .col(ColumnDef::new(PantryItems::IngredientId).uuid().not_null())
                     .col(ColumnDef::new(PantryItems::PurchaseDate).date())
                     .col(ColumnDef::new(PantryItems::ExpirationDate).date())
                     .col(ColumnDef::new(PantryItems::Quantity).integer())
@@ -103,6 +98,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Recipes::Table)
                     .col(ColumnDef::new(Recipes::Id).uuid().primary_key())
+                    .col(ColumnDef::new(Recipes::UserId).uuid().not_null())
                     .col(ColumnDef::new(Recipes::Name).string().not_null())
                     .col(ColumnDef::new(Recipes::CookingTimeMins).integer())
                     // .col(ColumnDef::new(Recipes::CookingTime).interval(None, None))
@@ -120,6 +116,14 @@ impl MigrationTrait for Migration {
                             .timestamp()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from_tbl(Recipes::Table)
+                            .from_col(Recipes::UserId)
+                            .to_tbl(Users::Table)
+                            .to_col(Users::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -180,47 +184,11 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        manager
-            .create_table(
-                Table::create()
-                    .table(RecipeUsers::Table)
-                    .col(ColumnDef::new(RecipeUsers::Id).uuid().primary_key())
-                    .col(ColumnDef::new(RecipeUsers::RecipeId).uuid().not_null())
-                    .col(ColumnDef::new(RecipeUsers::UserId).uuid().not_null())
-                    .col(
-                        ColumnDef::new(RecipeUsers::CreatedAt)
-                            .timestamp()
-                            .not_null()
-                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .from_tbl(RecipeUsers::Table)
-                            .from_col(RecipeUsers::UserId)
-                            .to_tbl(Users::Table)
-                            .to_col(Users::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .from_tbl(RecipeUsers::Table)
-                            .from_col(RecipeUsers::RecipeId)
-                            .to_tbl(Recipes::Table)
-                            .to_col(Recipes::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
-                    )
-                    .to_owned(),
-            )
-            .await?;
-
         Ok(())
     }
 
     // Define how to rollback this migration.
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager
-            .drop_table(Table::drop().table(RecipeUsers::Table).to_owned())
-            .await?;
         manager
             .drop_table(Table::drop().table(RecipeIngredients::Table).to_owned())
             .await?;
@@ -232,6 +200,9 @@ impl MigrationTrait for Migration {
             .await?;
         manager
             .drop_table(Table::drop().table(Ingredients::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Users::Table).to_owned())
             .await?;
         Ok(())
     }
@@ -286,18 +257,10 @@ pub enum RecipeIngredients {
 }
 
 #[derive(Iden)]
-pub enum RecipeUsers {
-    Table,
-    Id,
-    RecipeId,
-    UserId,
-    CreatedAt,
-}
-
-#[derive(Iden)]
 pub enum Recipes {
     Table,
     Id,
+    UserId,
     Name,
     CookingTimeMins,
     Link,

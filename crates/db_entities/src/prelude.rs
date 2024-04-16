@@ -3,6 +3,5 @@
 pub use super::ingredients::Entity as Ingredients;
 pub use super::pantry_items::Entity as PantryItems;
 pub use super::recipe_ingredients::Entity as RecipeIngredients;
-pub use super::recipe_users::Entity as RecipeUsers;
 pub use super::recipes::Entity as Recipes;
 pub use super::users::Entity as Users;

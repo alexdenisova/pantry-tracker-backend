@@ -6,6 +6,7 @@ use db_entities::recipes::Model;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
+    pub user_id: Uuid,
     pub name: String,
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
@@ -22,6 +23,7 @@ pub struct ListParamsDto {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
+    pub user_id: Uuid,
     pub name: String,
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
@@ -32,6 +34,7 @@ pub struct UpdateDto {
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
 pub struct RecipeDto {
     pub id: Uuid,
+    pub user_id: Uuid,
     pub name: String,
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
@@ -51,6 +54,7 @@ impl From<CreateDto> for Model {
         let now = Utc::now().naive_utc();
         Self {
             id: Uuid::new_v4(),
+            user_id: value.user_id,
             name: value.name,
             cooking_time_mins: value.cooking_time_mins,
             link: value.link,
@@ -66,6 +70,7 @@ impl From<Model> for RecipeDto {
     fn from(value: Model) -> Self {
         Self {
             id: value.id,
+            user_id: value.user_id,
             name: value.name,
             cooking_time_mins: value.cooking_time_mins,
             link: value.link,

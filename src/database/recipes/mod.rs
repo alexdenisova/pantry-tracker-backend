@@ -2,10 +2,8 @@ pub mod dto;
 
 use async_trait::async_trait;
 use chrono::Utc;
-use db_entities::recipe_users;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, JoinType, QueryFilter, QueryOrder,
-    QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set,
 };
 use uuid::Uuid;
 
@@ -68,15 +66,7 @@ impl DatabaseCRUD for DBClient {
             None => entity,
         };
         entity = match list_params.user_id {
-            Some(value) => entity
-                .join_rev(
-                    JoinType::InnerJoin,
-                    recipe_users::Entity::belongs_to(Entity)
-                        .from(recipe_users::Column::RecipeId)
-                        .to(Column::Id)
-                        .into(),
-                )
-                .filter(recipe_users::Column::UserId.eq(value)),
+            Some(value) => entity.filter(Column::UserId.eq(value)),
             None => entity,
         };
         Ok(RecipesListDto {
@@ -100,6 +90,7 @@ impl DatabaseCRUD for DBClient {
             })?
             .ok_or(UpdateError::NotFound { id })?;
         let mut recipe: ActiveModel = recipe.into();
+        recipe.user_id = Set(request.user_id);
         recipe.name = Set(request.name);
         recipe.cooking_time_mins = Set(request.cooking_time_mins);
         recipe.link = Set(request.link);

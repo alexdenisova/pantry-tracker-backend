@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::database::pantry_items::dto::ListParamsDto as PantryItemsListParamsDto;
-use crate::database::recipe_users::dto::ListParamsDto as RecipeUsersListParamsDto;
+use crate::database::recipes::dto::ListParamsDto as RecipesListParamsDto;
 
 // TODO: delete this
 #[derive(Clone, Deserialize, Debug)]
@@ -19,10 +19,12 @@ impl From<ListQueryParams> for PantryItemsListParamsDto {
     }
 }
 
-impl From<ListQueryParams> for RecipeUsersListParamsDto {
+impl From<ListQueryParams> for RecipesListParamsDto {
     fn from(val: ListQueryParams) -> Self {
-        RecipeUsersListParamsDto {
+        RecipesListParamsDto {
             user_id: Some(val.user_id),
+            name_contains: None,
+            cooking_time_mins: None,
         }
     }
 }

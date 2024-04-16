@@ -1,5 +1,6 @@
 mod payload;
 
+use axum::response::Redirect;
 use axum::{
     extract::{Json, State},
     http::StatusCode,
@@ -30,7 +31,7 @@ impl LoginRouter {
         State(state): State<AppState>,
         jar: CookieJar,
         Json(payload): Json<LoginPayload>,
-    ) -> Result<CookieJar, StatusCode> {
+    ) -> Result<(CookieJar, Redirect), StatusCode> {
         let username = payload.username.clone();
         match state.db_client.list_users(payload.into()).await {
             Ok(users) => {
@@ -41,7 +42,10 @@ impl LoginRouter {
                 let user = &users.items[0];
                 log::info!("User {:?} logged in", username);
                 match create_session(user.id, &state.redis_sender).await {
-                    Ok(session_id) => Ok(jar.add(Cookie::new(COOKIE_KEY, session_id))),
+                    Ok(session_id) => Ok((
+                        jar.add(Cookie::new(COOKIE_KEY, session_id)),
+                        Redirect::to("/"),
+                    )),
                     Err(err) => {
                         log::error!("{}", err.to_string());
                         Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -63,5 +67,6 @@ async fn create_session(user_id: Uuid, redis_sender: &Sender<RedisCommand>) -> A
         .map(char::from)
         .collect();
     redis_sender.set(&session_id, &user_id.to_string()).await?;
+    log::info!("Session created");
     Ok(session_id)
 }

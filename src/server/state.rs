@@ -1,4 +1,3 @@
-use color_eyre::eyre::eyre;
 use color_eyre::Result as AnyResult;
 use sea_orm::DatabaseConnection;
 use std::str::FromStr;

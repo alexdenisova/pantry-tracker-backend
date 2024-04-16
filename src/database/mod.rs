@@ -2,7 +2,6 @@ pub mod errors;
 pub mod ingredients;
 pub mod pantry_items;
 pub mod recipe_ingredients;
-pub mod recipe_users;
 pub mod recipes;
 pub mod users;
 
@@ -42,7 +41,6 @@ pub trait DBTrait:
     + ingredients::DatabaseCRUD
     + pantry_items::DatabaseCRUD
     + recipe_ingredients::DatabaseCRUD
-    + recipe_users::DatabaseCRUD
     + recipes::DatabaseCRUD
     + users::DatabaseCRUD
 {

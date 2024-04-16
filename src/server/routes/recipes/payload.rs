@@ -18,14 +18,15 @@ pub struct CreatePayload {
     // pub calories
 }
 
-impl From<CreatePayload> for CreateDto {
-    fn from(val: CreatePayload) -> Self {
+impl CreatePayload {
+    pub fn into_dto(self, user_id: Uuid) -> CreateDto {
         CreateDto {
-            name: titlecase(&val.name),
-            cooking_time_mins: val.cooking_time_mins,
-            link: val.link.map(|url| url.to_string()),
-            instructions: val.instructions,
-            image: val.image.map(|url| url.to_string()),
+            user_id,
+            name: titlecase(&self.name),
+            cooking_time_mins: self.cooking_time_mins,
+            link: self.link.map(|url| url.to_string()),
+            instructions: self.instructions,
+            image: self.image.map(|url| url.to_string()),
         }
     }
 }
@@ -39,14 +40,15 @@ pub struct UpdatePayload {
     pub image: Option<Url>,
 }
 
-impl From<UpdatePayload> for UpdateDto {
-    fn from(val: UpdatePayload) -> Self {
+impl UpdatePayload {
+    pub fn into_dto(self, user_id: Uuid) -> UpdateDto {
         UpdateDto {
-            name: val.name,
-            cooking_time_mins: val.cooking_time_mins,
-            link: val.link.map(|url| url.to_string()),
-            instructions: val.instructions,
-            image: val.image.map(|url| url.to_string()),
+            user_id,
+            name: self.name,
+            cooking_time_mins: self.cooking_time_mins,
+            link: self.link.map(|url| url.to_string()),
+            instructions: self.instructions,
+            image: self.image.map(|url| url.to_string()),
         }
     }
 }

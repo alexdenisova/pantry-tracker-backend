@@ -7,6 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
+    pub user_id: Uuid,
     pub name: String,
     pub cooking_time_mins: Option<i32>,
     pub link: Option<String>,
@@ -21,8 +22,14 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::recipe_ingredients::Entity")]
     RecipeIngredients,
-    #[sea_orm(has_many = "super::recipe_users::Entity")]
-    RecipeUsers,
+    #[sea_orm(
+        belongs_to = "super::users::Entity",
+        from = "Column::UserId",
+        to = "super::users::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Users,
 }
 
 impl Related<super::recipe_ingredients::Entity> for Entity {
@@ -31,9 +38,9 @@ impl Related<super::recipe_ingredients::Entity> for Entity {
     }
 }
 
-impl Related<super::recipe_users::Entity> for Entity {
+impl Related<super::users::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::RecipeUsers.def()
+        Relation::Users.def()
     }
 }
 

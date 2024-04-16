@@ -16,7 +16,6 @@ use self::routes::parse_ingredients::ParseIngredientsRouter;
 use self::routes::parse_recipe_link::ParsedRecipeLinkRouter;
 use self::routes::possible_recipes::PossibleRecipesRouter;
 use self::routes::recipe_ingredients::RecipeIngredientRouter;
-use self::routes::recipe_users::RecipeUserRouter;
 use self::routes::recipes::RecipeRouter;
 use self::routes::users::UserRouter;
 pub use state::AppState;
@@ -48,10 +47,10 @@ impl Server {
             }
         })?;
 
-        let cors = CorsLayer::new()
-            .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-            .allow_origin(Any)
-            .allow_headers([CONTENT_TYPE]);
+        // let cors = CorsLayer::new()
+        //     .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        //     .allow_origin(Any)
+        //     .allow_headers([CONTENT_TYPE]);
 
         let router: Router = Router::new()
             .route("/health", get(health))
@@ -63,11 +62,10 @@ impl Server {
             .nest("/possible_recipes", PossibleRecipesRouter::list())
             .nest("/recipes", RecipeRouter::get())
             .nest("/recipe_ingredients", RecipeIngredientRouter::get())
-            .nest("/recipe_users", RecipeUserRouter::get())
             .nest("/users", UserRouter::get())
             .with_state(self.state)
-            .fallback(Server::fallback)
-            .layer(cors);
+            .fallback(Server::fallback);
+        // .layer(cors);
 
         serve(listener, router).await.map_err(|err| {
             log::error!("{}", err.to_string());
@@ -87,7 +85,6 @@ impl Server {
 
 async fn health(State(state): State<AppState>) -> StatusCode {
     if state.db_client.health().await.is_ok() {
-        log::debug!("Healthy");
         StatusCode::OK
     } else {
         log::warn!("Unhealthy");

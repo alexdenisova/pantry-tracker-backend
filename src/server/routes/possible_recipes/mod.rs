@@ -37,10 +37,10 @@ impl PossibleRecipesRouter {
                 return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
             }
         };
-        let recipes = match state.db_client.list_recipe_users(query_params.into()).await {
-            Ok(recipe_users) => {
-                log::info!("{:?} recipe users collected", recipe_users.items.len());
-                recipe_users
+        let recipes = match state.db_client.list_recipes(query_params.into()).await {
+            Ok(res) => {
+                log::info!("{:?} recipes collected", res.items.len());
+                res
             }
             Err(err) => {
                 log::error!("{}", err.to_string());
@@ -52,7 +52,7 @@ impl PossibleRecipesRouter {
             let recipe_ingredients = match state
                 .db_client
                 .list_recipe_ingredients(RecipeIngredientListDto {
-                    recipe_id: Some(recipe.recipe_id),
+                    recipe_id: Some(recipe.id),
                 })
                 .await
             {
