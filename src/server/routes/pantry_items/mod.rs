@@ -10,6 +10,7 @@ use axum_extra::extract::CookieJar;
 use uuid::Uuid;
 
 use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
+use crate::server::routes::utils::VerifyError;
 use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
 use payload::{
@@ -45,6 +46,7 @@ impl PantryItemRouter {
                     payload.weight_grams,
                     payload.volume_milli_litres,
                 ) {
+                    log::debug!("Amount is not valid");
                     return (StatusCode::UNPROCESSABLE_ENTITY, Json(None));
                 }
                 match state
@@ -160,9 +162,8 @@ impl PantryItemRouter {
     ) -> (StatusCode, Json<Option<PantryItemResponse>>) {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                let auth_result = check_user_id(&state, id, user_id).await;
-                if !auth_result.is_success() {
-                    return (auth_result, Json(None));
+                if let Err(err) = verified_user(&state, id, user_id).await {
+                    return (err.into(), Json(None));
                 }
                 if !validate_quantity(
                     payload.quantity,
@@ -202,9 +203,8 @@ impl PantryItemRouter {
     ) -> StatusCode {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                let auth_result = check_user_id(&state, id, user_id).await;
-                if !auth_result.is_success() {
-                    return auth_result;
+                if let Err(err) = verified_user(&state, id, user_id).await {
+                    return err.into();
                 }
                 match state.db_client.delete_pantry_item(id).await {
                     Ok(()) => {
@@ -227,22 +227,22 @@ impl PantryItemRouter {
     }
 }
 
-async fn check_user_id(state: &AppState, id: Uuid, user_id: Uuid) -> StatusCode {
-    match state.db_client.get_recipe(id).await {
-        Ok(recipe) => {
-            if recipe.user_id == user_id {
-                log::info!("Got recipe with id {:?}", recipe.id);
-                return StatusCode::OK;
+async fn verified_user(state: &AppState, id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
+    match state.db_client.get_pantry_item(id).await {
+        Ok(pantry_item) => {
+            if pantry_item.user_id == user_id {
+                log::info!("Got pantry item with id {:?}", pantry_item.id);
+                return Ok(());
             }
-            StatusCode::UNAUTHORIZED
+            Err(VerifyError::Unauthorized)
         }
         Err(err) => {
             if let GetError::NotFound { .. } = err {
                 log::error!("{}", err.to_string());
-                return StatusCode::NOT_FOUND;
+                return Err(VerifyError::NotFound);
             }
             log::error!("{}", err.to_string());
-            StatusCode::INTERNAL_SERVER_ERROR
+            Err(VerifyError::InternalServerError)
         }
     }
 }

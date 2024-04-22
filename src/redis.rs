@@ -27,6 +27,10 @@ impl RedisClient {
     pub fn set(&mut self, key: &str, value: &str) -> AnyResult<()> {
         self.connection.set(key, value).map_err(|e| eyre!(e))
     }
+
+    pub fn delete(&mut self, key: &str) -> AnyResult<()> {
+        self.connection.del(key).map_err(|e| eyre!(e))
+    }
 }
 
 pub enum RedisCommand {
@@ -37,6 +41,10 @@ pub enum RedisCommand {
     Set {
         key: String,
         val: String,
+        resp: Responder<()>,
+    },
+    Delete {
+        key: String,
         resp: Responder<()>,
     },
 }
@@ -55,6 +63,9 @@ pub async fn new_redis_sender(mut redis_client: RedisClient) -> Sender<RedisComm
                 RedisCommand::Set { key, val, resp } => {
                     let _ = resp.send(redis_client.set(&key, &val));
                 }
+                RedisCommand::Delete { key, resp } => {
+                    let _ = resp.send(redis_client.delete(&key));
+                }
             }
         }
         Ok::<(), Report>(())
@@ -65,6 +76,7 @@ pub async fn new_redis_sender(mut redis_client: RedisClient) -> Sender<RedisComm
 pub trait RedisCommands {
     async fn get(&self, key: &str) -> AnyResult<Option<String>>;
     async fn set(&self, key: &str, value: &str) -> AnyResult<()>;
+    async fn delete(&self, key: &str) -> AnyResult<()>;
 }
 
 impl RedisCommands for Sender<RedisCommand> {
@@ -83,6 +95,16 @@ impl RedisCommands for Sender<RedisCommand> {
         self.send(RedisCommand::Set {
             key: key.to_owned(),
             val: value.to_owned(),
+            resp: sender,
+        })
+        .await?;
+        receiver.await?
+    }
+    
+    async fn delete(&self, key: &str) -> AnyResult<()> {
+        let (sender, receiver) = oneshot::channel::<AnyResult<()>>();
+        self.send(RedisCommand::Delete {
+            key: key.to_owned(),
             resp: sender,
         })
         .await?;

@@ -24,14 +24,13 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
-    pub name: String,
     pub can_be_eaten_raw: Option<bool>,
 }
 
 impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
         UpdateDto {
-            name: val.name,
+            name: None,
             can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }

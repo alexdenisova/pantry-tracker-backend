@@ -84,6 +84,7 @@ impl DatabaseCRUD for DBClient {
         id: Uuid,
         request: UpdateDto,
     ) -> Result<PantryItemDto, UpdateError> {
+        println!("in 0");
         let pantry_item: Model = Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
@@ -92,6 +93,7 @@ impl DatabaseCRUD for DBClient {
                 error: err.into(),
             })?
             .ok_or(UpdateError::NotFound { id })?;
+        println!("in");
         let mut pantry_item: ActiveModel = pantry_item.into();
         pantry_item.ingredient_id = Set(request.ingredient_id);
         pantry_item.user_id = Set(request.user_id);

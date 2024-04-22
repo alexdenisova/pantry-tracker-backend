@@ -1,4 +1,4 @@
-use chrono::{Duration, NaiveDate, NaiveDateTime, Utc};
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -91,19 +91,7 @@ impl From<PantryItemDto> for PantryItemResponse {
             ingredient_id: val.ingredient_id,
             user_id: val.user_id,
             purchase_date: val.purchase_date,
-            expiration_date: {
-                if let Some(date) = val.expiration_date {
-                    let now = Utc::now().date_naive();
-                    let days_left = date - now;
-                    if days_left <= Duration::days(7) {
-                        Some(format!("in {} days", days_left.num_days()))
-                    } else {
-                        Some(date.to_string())
-                    }
-                } else {
-                    None
-                }
-            },
+            expiration_date: val.expiration_date.map(|date| date.to_string()),
             quantity: val.quantity,
             weight_grams: val.weight_grams,
             volume_milli_litres: val.volume_milli_litres,

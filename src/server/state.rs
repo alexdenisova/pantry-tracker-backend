@@ -22,15 +22,22 @@ impl AppState {
             redis_sender,
         }
     }
-    /// Returns the user_id
+    /// Returns the `user_id`
     pub async fn session_is_valid(&self, session_id: &str) -> AnyResult<bool> {
         Ok(self.redis_sender.get(session_id).await?.is_some())
     }
-    /// Returns the user_id
+    /// Returns the `user_id`
     pub async fn get_sessions_user(&self, session_id: &str) -> AnyResult<Option<Uuid>> {
         match self.redis_sender.get(session_id).await? {
             Some(id) => Ok(Some(Uuid::from_str(&id)?)),
             None => Ok(None),
+        }
+    }
+
+    pub async fn user_is_admin(&self, user_id: Uuid) -> AnyResult<bool> {
+        match self.db_client.get_user(user_id).await {
+            Ok(user) => Ok(user.admin),
+            Err(err) => Err(err.into()),
         }
     }
 }

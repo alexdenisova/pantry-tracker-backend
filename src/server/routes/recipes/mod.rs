@@ -14,6 +14,7 @@ use urlencoding::decode;
 use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
 use crate::database::recipe_ingredients::dto::RecipeIngredientsListDto;
 use crate::database::recipes::dto::RecipesListDto;
+use crate::server::routes::utils::VerifyError;
 use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
 use uuid::Uuid;
@@ -135,9 +136,8 @@ impl RecipeRouter {
     ) -> (StatusCode, Json<Option<RecipeResponse>>) {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                let auth_result = check_user_id(&state, id, user_id).await;
-                if !auth_result.is_success() {
-                    return (auth_result, Json(None));
+                if let Err(err) = verified_user(&state, id, user_id).await {
+                    return (err.into(), Json(None));
                 }
                 match state
                     .db_client
@@ -170,9 +170,8 @@ impl RecipeRouter {
     ) -> StatusCode {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                let auth_result = check_user_id(&state, id, user_id).await;
-                if !auth_result.is_success() {
-                    return auth_result;
+                if let Err(err) = verified_user(&state, id, user_id).await {
+                    return err.into();
                 }
                 match state.db_client.delete_recipe(id).await {
                     Ok(()) => {
@@ -195,22 +194,22 @@ impl RecipeRouter {
     }
 }
 
-async fn check_user_id(state: &AppState, id: Uuid, user_id: Uuid) -> StatusCode {
+async fn verified_user(state: &AppState, id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
     match state.db_client.get_recipe(id).await {
         Ok(recipe) => {
             if recipe.user_id == user_id {
                 log::info!("Got recipe with id {:?}", recipe.id);
-                return StatusCode::OK;
+                return Ok(());
             }
-            StatusCode::UNAUTHORIZED
+            Err(VerifyError::Unauthorized)
         }
         Err(err) => {
             if let GetError::NotFound { .. } = err {
                 log::error!("{}", err.to_string());
-                return StatusCode::NOT_FOUND;
+                return Err(VerifyError::NotFound);
             }
             log::error!("{}", err.to_string());
-            StatusCode::INTERNAL_SERVER_ERROR
+            Err(VerifyError::InternalServerError)
         }
     }
 }

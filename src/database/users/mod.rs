@@ -73,6 +73,8 @@ impl DatabaseCRUD for DBClient {
         let active_model: ActiveModel = ActiveModel {
             id: ActiveValue::Set(id),
             name: ActiveValue::Set(request.name),
+            password_hash: ActiveValue::Set(request.password_hash),
+            admin: ActiveValue::Set(request.admin.unwrap_or(false)),
             updated_at: ActiveValue::Set(Utc::now().naive_utc()),
             ..Default::default()
         };

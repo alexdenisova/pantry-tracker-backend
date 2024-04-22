@@ -28,8 +28,9 @@ impl IngredientRouter {
             )
             .route(
                 "/:id",
-                get(IngredientRouter::get_ingredient), // .put(IngredientRouter::update_ingredient)
-                                                       // .delete(IngredientRouter::delete_ingredient),
+                get(IngredientRouter::get_ingredient)
+                    .patch(IngredientRouter::update_ingredient)
+                    .delete(IngredientRouter::delete_ingredient),
             )
     }
 
@@ -111,7 +112,7 @@ impl IngredientRouter {
     }
 
     // TODO: make admin user who can Update/Delete ingredients
-    async fn _update_ingredient(
+    async fn update_ingredient(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
@@ -139,25 +140,27 @@ impl IngredientRouter {
         (StatusCode::UNAUTHORIZED, Json(None))
     }
 
-    async fn _delete_ingredient(
+    async fn delete_ingredient(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
     ) -> StatusCode {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(true) = state.session_is_valid(session_id.value_trimmed()).await {
-                match state.db_client.delete_ingredient(id).await {
-                    Ok(()) => {
-                        log::info!("Deleted ingredient with id {:?}", id);
-                        return StatusCode::NO_CONTENT;
-                    }
-                    Err(err) => {
-                        if let DeleteError::NotFound { .. } = err {
-                            log::error!("{}", err.to_string());
-                            return StatusCode::NOT_FOUND;
+            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+                if state.user_is_admin(user_id).await.unwrap_or(false) {
+                    match state.db_client.delete_ingredient(id).await {
+                        Ok(()) => {
+                            log::info!("Deleted ingredient with id {:?}", id);
+                            return StatusCode::NO_CONTENT;
                         }
-                        log::error!("{}", err.to_string());
-                        return StatusCode::INTERNAL_SERVER_ERROR;
+                        Err(err) => {
+                            if let DeleteError::NotFound { .. } = err {
+                                log::error!("{}", err.to_string());
+                                return StatusCode::NOT_FOUND;
+                            }
+                            log::error!("{}", err.to_string());
+                            return StatusCode::INTERNAL_SERVER_ERROR;
+                        }
                     }
                 }
             }

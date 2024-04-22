@@ -34,6 +34,13 @@ impl MigrationTrait for Migration {
                     .table(Users::Table)
                     .col(ColumnDef::new(Users::Id).uuid().primary_key())
                     .col(ColumnDef::new(Users::Name).string().not_null())
+                    .col(ColumnDef::new(Users::PasswordHash).string().not_null())
+                    .col(
+                        ColumnDef::new(Users::Admin)
+                            .boolean()
+                            .not_null()
+                            .default(false),
+                    )
                     .col(
                         ColumnDef::new(Users::CreatedAt)
                             .timestamp()
@@ -133,7 +140,12 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(RecipeIngredients::Table)
-                    .col(ColumnDef::new(RecipeIngredients::Id).uuid().primary_key())
+                    .col(
+                        ColumnDef::new(RecipeIngredients::Id)
+                            .uuid()
+                            .unique_key()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(RecipeIngredients::RecipeId)
                             .uuid()
@@ -163,6 +175,11 @@ impl MigrationTrait for Migration {
                             .timestamp()
                             .not_null()
                             .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .primary_key(
+                        Index::create()
+                            .col(RecipeIngredients::IngredientId)
+                            .col(RecipeIngredients::RecipeId),
                     )
                     .foreign_key(
                         ForeignKey::create()
@@ -223,7 +240,8 @@ enum Users {
     Table,
     Id,
     Name,
-    // Password
+    PasswordHash,
+    Admin,
     CreatedAt,
     UpdatedAt,
 }

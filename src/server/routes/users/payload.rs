@@ -3,26 +3,39 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::database::users::dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
+use crate::server::routes::utils::hash_password;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
     pub name: String,
+    pub password: String,
+    pub admin: Option<bool>,
 }
 
 impl From<CreatePayload> for CreateDto {
     fn from(val: CreatePayload) -> Self {
-        CreateDto { name: val.name }
+        CreateDto {
+            name: val.name,
+            password_hash: hash_password(&val.password),
+            admin: val.admin,
+        }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
     pub name: String,
+    pub password: String,
+    pub admin: Option<bool>,
 }
 
 impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
-        UpdateDto { name: val.name }
+        UpdateDto {
+            name: val.name,
+            password_hash: hash_password(&val.password),
+            admin: val.admin,
+        }
     }
 }
 
@@ -41,6 +54,8 @@ impl From<ListQueryParams> for ListParamsDto {
 pub struct UserResponse {
     pub id: Uuid,
     pub name: String,
+    pub password_hash: String,
+    pub admin: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -50,6 +65,8 @@ impl From<UserDto> for UserResponse {
         UserResponse {
             id: val.id,
             name: val.name,
+            password_hash: val.password_hash,
+            admin: val.admin,
             created_at: val.created_at,
             updated_at: val.updated_at,
         }

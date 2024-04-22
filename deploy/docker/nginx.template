@@ -2,7 +2,7 @@ server {
   listen ${NGINX_PORT};
 
   location ${ROOT_PATH} {
-      proxy_pass http://app:8080;
+      proxy_pass http://host.docker.internal:${BACKEND_PORT};
       rewrite ^${ROOT_PATH}(/|$)(.*) /$2 break;
       proxy_no_cache 1;
       proxy_cache_bypass 1;
