@@ -13,7 +13,7 @@ pub struct RedisClient {
 
 impl RedisClient {
     pub fn new(
-        url: &Url
+        url: &str
     ) -> AnyResult<Self> {
         Ok(RedisClient {
             connection: Client::open(url)?.get_connection()?,

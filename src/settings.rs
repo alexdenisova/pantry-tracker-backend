@@ -10,6 +10,7 @@ use url::Url;
 use crate::redis::{new_redis_sender, RedisClient, RedisCommand};
 
 const DEFAULT_DATABASE_URL: &str = "postgres://postgres:postgres@localhost:5432/postgres";
+const DEFAULT_REDIS_URL: &str = "redis://localhost:6379/0";
 const DEFAULT_SOCKET: &str = "localhost:8080";
 
 #[derive(Debug, Parser)]
@@ -52,6 +53,7 @@ pub struct DatabaseArguments {
     /// Database URL
     #[arg(
         long = "db-url",
+        id = "db-url",
         env = "APP__DATABASE_URL",
         default_value = DEFAULT_DATABASE_URL,
         global = true
@@ -62,14 +64,14 @@ pub struct DatabaseArguments {
 #[derive(Debug, Args)]
 pub struct RedisArguments {
     /// Redis URL
-    #[arg(long = "redis-url", env = "APP__REDIS_URL")]
+    #[arg(long = "redis-url", id = "redis-url", env = "APP__REDIS_URL", default_value = DEFAULT_REDIS_URL,)]
     url: Url,
 }
 
 impl RedisArguments {
     pub fn client(&self) -> AnyResult<RedisClient> {
         RedisClient::new(
-            &self.url
+            &self.url.to_string()
         )
     }
 }
