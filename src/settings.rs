@@ -5,6 +5,7 @@ use fern::colors::{Color, ColoredLevelConfig};
 use fern::Dispatch;
 use log::LevelFilter;
 use tokio::sync::mpsc::Sender;
+use url::Url;
 
 use crate::redis::{new_redis_sender, RedisClient, RedisCommand};
 
@@ -55,36 +56,20 @@ pub struct DatabaseArguments {
         default_value = DEFAULT_DATABASE_URL,
         global = true
     )]
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Debug, Args)]
 pub struct RedisArguments {
-    /// Redis username
-    #[arg(long = "redis-username", env = "REDIS_USERNAME")]
-    username: Option<String>,
-    /// Redis password
-    #[arg(long = "redis-password", env = "REDIS_PASSWORD")]
-    pub password: Option<String>,
     /// Redis URL
-    #[arg(long = "redis-host", env = "REDIS_HOST")]
-    host: String,
-    /// Redis port
-    #[arg(long = "redis-port", default_value = "6379", env = "REDIS_PORT")]
-    port: u16,
-    /// Redis database
-    #[arg(long = "redis-db", default_value = "1", env = "REDIS_DATABASE")]
-    db: i64,
+    #[arg(long = "redis-url", env = "APP__REDIS_URL")]
+    url: Url,
 }
 
 impl RedisArguments {
     pub fn client(&self) -> AnyResult<RedisClient> {
         RedisClient::new(
-            self.host.clone(),
-            self.port,
-            self.db,
-            self.username.clone(),
-            self.password.clone(),
+            &self.url
         )
     }
 }

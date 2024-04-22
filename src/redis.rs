@@ -1,5 +1,6 @@
 use color_eyre::{eyre::eyre, Report, Result as AnyResult};
-use redis::{Client, Commands, Connection, ConnectionInfo, RedisConnectionInfo};
+use redis::{Client, Commands, Connection};
+use url::Url;
 
 use tokio::sync::{
     mpsc::{self, Sender},
@@ -12,22 +13,10 @@ pub struct RedisClient {
 
 impl RedisClient {
     pub fn new(
-        host: String,
-        port: u16,
-        db: i64,
-        username: Option<String>,
-        password: Option<String>,
+        url: &Url
     ) -> AnyResult<Self> {
-        let connection = ConnectionInfo {
-            addr: redis::ConnectionAddr::Tcp(host, port),
-            redis: RedisConnectionInfo {
-                db,
-                username,
-                password,
-            },
-        };
         Ok(RedisClient {
-            connection: Client::open(connection)?.get_connection()?,
+            connection: Client::open(url)?.get_connection()?,
         })
     }
 
