@@ -93,7 +93,9 @@ impl DatabaseCRUD for DBClient {
             })?
             .ok_or(UpdateError::NotFound { id })?;
         let mut ingredient: ActiveModel = ingredient.into();
-        ingredient.name = Set(request.name);
+        if let Some(name) = request.name {
+            ingredient.name = Set(name);
+        }
         ingredient.can_be_eaten_raw = Set(request.can_be_eaten_raw);
 
         Ok(Entity::update(ingredient)

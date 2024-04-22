@@ -4,53 +4,54 @@ services:
   nginx:
     image: nginx:1-alpine
     restart: always
-    depends_on:
-      app:
-        condition: service_healthy
+    # depends_on:
+    #   app:
+    #     condition: service_healthy
     environment:
       NGINX_PORT: "8080"
       ROOT_PATH: '/api'
       FRONTEND_PORT: 5173
+      BACKEND_PORT: 8081
     ports:
       - "8080:8080/tcp"
     volumes:
       - "./deploy/docker/nginx.template:/etc/nginx/templates/default.conf.template:ro"
 
-  app:
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      # migrations:
-      #   condition: service_completed_successfully
-    build:
-      context: .
-      dockerfile: dev.dockerfile
-    command: run
-    healthcheck:
-      test: 
-        - CMD
-        - curl
-        - localhost:8080/health  
-        - --fail
-        - --silent
-      interval: 30s
-      timeout: 1s
-      retries: 10
-    environment: &environment
-      APP__DATABASE_URL: "postgres://postgres:postgres@postgres:5432/postgres"
-      APP__SOCKET: "0.0.0.0:8080"
-      REDIS_HOST: redis
-      APP__DEBUG: true
-    ports:
-      - "8082:8080/tcp"
-    volumes:
-      - ./crates:/app/crates:ro
-      - ./src:/app/src:ro
-      - ./target-dev:/app/target:rw
-      - ./Cargo.lock:/app/Cargo.lock:ro
-      - ./Cargo.toml:/app/Cargo.toml:ro
+  # app:
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     # migrations:
+  #     #   condition: service_completed_successfully
+  #   build:
+  #     context: .
+  #     dockerfile: dev.dockerfile
+  #   command: run
+  #   healthcheck:
+  #     test: 
+  #       - CMD
+  #       - curl
+  #       - localhost:8080/health  
+  #       - --fail
+  #       - --silent
+  #     interval: 30s
+  #     timeout: 1s
+  #     retries: 10
+  #   environment: &environment
+  #     APP__DATABASE_URL: "postgres://postgres:postgres@postgres:5432/postgres"
+  #     APP__SOCKET: "0.0.0.0:8080"
+  #     REDIS_HOST: redis
+  #     APP__DEBUG: true
+  #   ports:
+  #     - "8082:8080/tcp"
+  #   volumes:
+  #     - ./crates:/app/crates:ro
+  #     - ./src:/app/src:ro
+  #     - ./target-dev:/app/target:rw
+  #     - ./Cargo.lock:/app/Cargo.lock:ro
+  #     - ./Cargo.toml:/app/Cargo.toml:ro
   
   # migrations:
   #   build:

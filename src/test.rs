@@ -1,8 +1,14 @@
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
+    Argon2,
+};
 use chrono::NaiveDate;
 use color_eyre::Result as AnyResult;
 
 use crate::database::DBTrait;
+use crate::server::routes::utils::hash_password;
 
+#[allow(clippy::too_many_lines)]
 pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<()> {
     let chicken = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
@@ -20,11 +26,15 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
     let user = client
         .create_user(crate::database::users::dto::CreateDto {
             name: "test_user".to_owned(),
+            password_hash: hash_password("1234"),
+            admin: Some(false),
         })
         .await?;
-    let user_2 = client
+    let admin = client
         .create_user(crate::database::users::dto::CreateDto {
-            name: "test_user_2".to_owned(),
+            name: "admin".to_owned(),
+            password_hash: hash_password("2345"),
+            admin: Some(false),
         })
         .await?;
 
@@ -42,7 +52,7 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
     client
         .create_pantry_item(crate::database::pantry_items::dto::CreateDto {
             ingredient_id: chicken.id,
-            user_id: user_2.id,
+            user_id: admin.id,
             purchase_date: None,
             expiration_date: Some(NaiveDate::from_ymd_opt(2024, 4, 20).unwrap()),
             quantity: None,
@@ -63,7 +73,7 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
         .await?;
 
     let chicken_recipe = client.create_recipe(crate::database::recipes::dto::CreateDto{ user_id: user.id, name: "Plain Chicken".to_owned(), cooking_time_mins: Some(20), link: None, instructions: Some("cook chicken".to_owned()), image: Some("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvUbhcjwZxp2hfQGoc_ChtsN-4FF2nQ1U3yUmwEv8YSQ&s".to_owned())  }).await?;
-    let chicken_recipe_2 = client.create_recipe(crate::database::recipes::dto::CreateDto{ user_id: user_2.id, name: "Plain Chicken".to_owned(), cooking_time_mins: Some(20), link: None, instructions: Some("cook chicken".to_owned()), image: Some("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvUbhcjwZxp2hfQGoc_ChtsN-4FF2nQ1U3yUmwEv8YSQ&s".to_owned())  }).await?;
+    let chicken_recipe_2 = client.create_recipe(crate::database::recipes::dto::CreateDto{ user_id: admin.id, name: "Plain Chicken".to_owned(), cooking_time_mins: Some(20), link: None, instructions: Some("cook chicken".to_owned()), image: Some("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvUbhcjwZxp2hfQGoc_ChtsN-4FF2nQ1U3yUmwEv8YSQ&s".to_owned())  }).await?;
     let chicken_rice_recipe = client.create_recipe(crate::database::recipes::dto::CreateDto{ user_id: user.id, name: "Chicken Rice".to_owned(), cooking_time_mins: Some(30), link: Some("https://iowagirleats.com/one-pot-chicken-and-rice/".to_owned()), instructions: None, image: Some("https://static01.nyt.com/images/2023/11/14/multimedia/MB-Chicken-and-Ric-cvjf/MB-Chicken-and-Ric-cvjf-superJumbo.jpg".to_owned())  }).await?;
 
     client

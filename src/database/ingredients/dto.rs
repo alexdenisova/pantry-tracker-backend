@@ -12,7 +12,7 @@ pub struct CreateDto {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
-    pub name: String,
+    pub name: Option<String>,
     pub can_be_eaten_raw: Option<bool>,
 }
 
