@@ -20,7 +20,7 @@ jobs:
           rustup update --no-self-update ${{ env.RUST_CHANNEL }}
           rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
           rustup default ${{ env.RUST_CHANNEL }}
-      - run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ env.GITHUB_WORKSPACE }}
+      - run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.GITHUB_WORKSPACE }}
       - run: cargo +${{ env.RUST_CHANNEL }} build --workspace --all-targets --all-features --profile dev
       - uses: actions/upload-artifact@master
         with:
