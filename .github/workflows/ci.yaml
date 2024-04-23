@@ -11,7 +11,7 @@ on:
     branches: [main]
 
 env:
-  RUST_CHANNEL: 1.75.0-x86_64-unknown-linux-musl
+  RUST_CHANNEL: x86_64-unknown-linux-musl
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -26,15 +26,18 @@ jobs:
     #     password: ${{ secrets.PACKAGES_TOKEN }}
     steps:
       - uses: actions/checkout@v3
-      # - name: Install toolchain if not cross-compiling
-      #   uses: dtolnay/rust-toolchain@stable
+      - name: Install toolchain if not cross-compiling
+        uses: dtolnay/rust-toolchain@stable
+        with:
+        # Make Rust compile to our target (defined in the matrix)
+          targets: ${{ env.RUST_CHANNEL }}
       - name: Install musl-tools on Linux
         run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
-      - name: Install Rust toolchain
-        run: |
-          rustup update --no-self-update ${{ env.RUST_CHANNEL }}
-          rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
-          rustup default ${{ env.RUST_CHANNEL }}
+      # - name: Install Rust toolchain
+      #   run: |
+      #     rustup update --no-self-update ${{ env.RUST_CHANNEL }}
+      #     rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
+      #     rustup default ${{ env.RUST_CHANNEL }}
       - name: Cache target dir
         uses: Swatinem/rust-cache@v2
       - run: cargo build --locked --release --target 1.75.0-x86_64-unknown-linux-musl
