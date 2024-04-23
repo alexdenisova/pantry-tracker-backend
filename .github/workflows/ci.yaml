@@ -11,7 +11,7 @@ on:
     branches: [main]
 
 env:
-  RUST_CHANNEL: 1.75.0-x86_64-unknown-linux-musl
+  RUST_CHANNEL: x86_64-unknown-linux-musl
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
