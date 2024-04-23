@@ -44,12 +44,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
-          command: build
-          args: --release --target ${{ env.RUST_CHANNEL }}
-      - run: ls target/release
-      - run: ls target/release/${{ env.RUST_CHANNEL }}
-      - run: cp target/release/${{ env.RUST_CHANNEL }}/pantry-tracker dist
-      - run: cp target/release/pantry-tracker dist
+          command: install
+          args: --profile release --target ${{ env.RUST_CHANNEL }} --all-features --locked --path ${{ github.workspace }} --root dist
       # - run: cargo build --locked --release --target 1.75.0-x86_64-unknown-linux-musl
       # - run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
       - uses: actions/upload-artifact@master
