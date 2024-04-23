@@ -1,6 +1,5 @@
 name: Rust CI
 
-
 on:
   push:
   pull_request:
@@ -52,6 +51,6 @@ jobs:
           password: ${{ secrets.PACKAGES_TOKEN }}
       - run: docker build -t ${{ github.event.repository.name }} .
       - run: |-
-          TAG="$(cat package.json | jq -r '.version')"
+          TAG="$(cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"')"
           docker tag ${{ github.event.repository.name }} ${REGISTRY}/${{ github.actor }}/${{ github.event.repository.name }}:${TAG}
           docker push ${REGISTRY}/${{ github.actor }}/${{ github.event.repository.name }}:${TAG}
