@@ -7,6 +7,7 @@ RUN \
     && rm -rf /var/cache/apk/* /tmp/*
 
 COPY dist/bin/* /bin/
+RUN chmod +x /bin/*
 
 WORKDIR /workspace
 ENTRYPOINT [""]
