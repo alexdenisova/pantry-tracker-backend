@@ -18,12 +18,12 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/alexdenisova/rust:1.75.0
-      options: --user root
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.PACKAGES_TOKEN }}
+    # container:
+    #   image: ghcr.io/alexdenisova/rust:1.75.0
+    #   options: --user root
+    #   credentials:
+    #     username: ${{ github.actor }}
+    #     password: ${{ secrets.PACKAGES_TOKEN }}
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust toolchain
@@ -34,7 +34,8 @@ jobs:
       - name: Cache target dir
         uses: Swatinem/rust-cache@v2
       - name: Build Package
-        run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
+        uses: "juankaram/rust-musl-action@master"
+        # run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
       - uses: actions/upload-artifact@master
         with:
           name: build
