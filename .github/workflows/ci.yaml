@@ -26,11 +26,13 @@ jobs:
     #     password: ${{ secrets.PACKAGES_TOKEN }}
     steps:
       - uses: actions/checkout@v3
-      - name: Install Rust toolchain
-        run: |
-          rustup update --no-self-update ${{ env.RUST_CHANNEL }}
-          rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
-          rustup default ${{ env.RUST_CHANNEL }}
+      - name: Install toolchain if not cross-compiling
+        uses: dtolnay/rust-toolchain@stable
+      # - name: Install Rust toolchain
+      #   run: |
+      #     rustup update --no-self-update ${{ env.RUST_CHANNEL }}
+      #     rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
+      #     rustup default ${{ env.RUST_CHANNEL }}
       - name: Install musl-tools on Linux
         run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
       - name: Cache target dir
