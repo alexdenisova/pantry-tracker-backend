@@ -18,13 +18,19 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/alexdenisova/rust:1.75.0
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.PACKAGES_TOKEN }}
     steps:
       - uses: actions/checkout@v3
-      - name: Install Rust toolchain
-        run: |
-          rustup update --no-self-update ${{ env.RUST_CHANNEL }}
-          rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
-          rustup default ${{ env.RUST_CHANNEL }}
+      # - name: Install Rust toolchain
+      #   run: |
+      #     rustup update --no-self-update ${{ env.RUST_CHANNEL }}
+      #     rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
+      #     rustup default ${{ env.RUST_CHANNEL }}
       - name: Cache target dir
         uses: Swatinem/rust-cache@v2
       - name: Build Package
