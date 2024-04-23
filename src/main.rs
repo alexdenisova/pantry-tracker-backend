@@ -31,6 +31,7 @@ async fn main() -> AnyResult<()> {
             let state = AppState::new(db_connection, redis_sender);
             let server = Server::new(state);
 
+            log::info!("Server listening on {}", args.socket);
             server.run(args.socket).await.unwrap();
         }
         Commands::Migrate => Migrator::up(&db_connection, None).await?,
