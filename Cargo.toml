@@ -1,10 +1,10 @@
 [package]
-name = "fridge-tracker"
+name = "pantry-tracker"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "fridge-tracker"
+name = "pantry-tracker"
 path = "src/main.rs"
 
 [workspace]

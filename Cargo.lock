@@ -1108,7 +1108,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fridge-tracker"
+name = "pantry-tracker"
 version = "0.1.0"
 dependencies = [
  "argon2",

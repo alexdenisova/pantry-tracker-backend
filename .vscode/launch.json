@@ -4,15 +4,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'fridge-tracker'",
+            "name": "Debug executable 'pantry-tracker'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=fridge-tracker",
-                    "--package=fridge-tracker"
+                    "--bin=pantry-tracker",
+                    "--package=pantry-tracker"
                 ],
                 "filter": {
-                    "name": "fridge-tracker",
+                    "name": "pantry-tracker",
                     "kind": "bin"
                 }
             },
@@ -24,16 +24,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'fridge-tracker'",
+            "name": "Debug unit tests in executable 'pantry-tracker'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=fridge-tracker",
-                    "--package=fridge-tracker"
+                    "--bin=pantry-tracker",
+                    "--package=pantry-tracker"
                 ],
                 "filter": {
-                    "name": "fridge-tracker",
+                    "name": "pantry-tracker",
                     "kind": "bin"
                 }
             },
