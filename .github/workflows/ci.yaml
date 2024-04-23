@@ -11,7 +11,7 @@ on:
     branches: [main]
 
 env:
-  RUST_CHANNEL: 1.75.0-x86_64-unknown-linux-musl
+  RUST_CHANNEL: x86_64-unknown-linux-musl
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -31,11 +31,11 @@ jobs:
           rustup update --no-self-update ${{ env.RUST_CHANNEL }}
           rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
           rustup default ${{ env.RUST_CHANNEL }}
+      - name: Install musl-tools on Linux
+        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
       - name: Cache target dir
         uses: Swatinem/rust-cache@v2
-      - name: Build Package
-        uses: "juankaram/rust-musl-action@master"
-        # run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
+      - run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
       - uses: actions/upload-artifact@master
         with:
           name: build
