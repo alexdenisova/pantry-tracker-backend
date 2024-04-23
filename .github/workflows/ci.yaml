@@ -21,13 +21,7 @@ jobs:
           rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
           rustup default ${{ env.RUST_CHANNEL }}
       - name: Cargo Target Cache
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.toml') }}
-            ${{ runner.os }}-cargo-target
+        uses: Swatinem/rust-cache@v2
       - run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
       - uses: actions/upload-artifact@master
         with:
