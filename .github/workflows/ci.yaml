@@ -21,8 +21,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ env.RUST_CHANNEL }}
-      # - name: Install musl-tools on Linux
-      #   run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
+      - name: Install musl-tools on Linux
+        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
       - name: Cache target dir
         uses: Swatinem/rust-cache@v2
       - name: Build
