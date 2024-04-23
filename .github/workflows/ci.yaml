@@ -29,7 +29,7 @@ jobs:
       - name: Install toolchain if not cross-compiling
         uses: dtolnay/rust-toolchain@stable
         with:
-        # Make Rust compile to our target (defined in the matrix)
+          # Make Rust compile to our target (defined in the matrix)
           targets: ${{ env.RUST_CHANNEL }}
       - name: Install musl-tools on Linux
         run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
@@ -45,7 +45,11 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --verbose --release --target ${{ env.RUST_CHANNEL }}
+          args: --release --target ${{ env.RUST_CHANNEL }}
+      - run: ls target/release
+      - run: ls target/release/${{ env.RUST_CHANNEL }}
+      - run: cp target/release/${{ env.RUST_CHANNEL }}/pantry-tracker dist
+      - run: cp target/release/pantry-tracker dist
       # - run: cargo build --locked --release --target 1.75.0-x86_64-unknown-linux-musl
       # - run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
       - uses: actions/upload-artifact@master
