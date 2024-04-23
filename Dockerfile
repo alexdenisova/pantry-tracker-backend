@@ -9,5 +9,6 @@ RUN \
 COPY dist/bin/* /bin/
 RUN chmod +x /bin/*
 
+EXPOSE 8080/tcp
 WORKDIR /workspace
 ENTRYPOINT [""]
