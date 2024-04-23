@@ -18,26 +18,14 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # container:
-    #   image: ghcr.io/alexdenisova/rust:1.75.0
-    #   options: --user root
-    #   credentials:
-    #     username: ${{ github.actor }}
-    #     password: ${{ secrets.PACKAGES_TOKEN }}
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain if not cross-compiling
         uses: dtolnay/rust-toolchain@stable
         with:
-          # Make Rust compile to our target (defined in the matrix)
           targets: ${{ env.RUST_CHANNEL }}
-      - name: Install musl-tools on Linux
-        run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
-      # - name: Install Rust toolchain
-      #   run: |
-      #     rustup update --no-self-update ${{ env.RUST_CHANNEL }}
-      #     rustup component add --toolchain ${{ env.RUST_CHANNEL }} rustfmt rust-src
-      #     rustup default ${{ env.RUST_CHANNEL }}
+      # - name: Install musl-tools on Linux
+      #   run: sudo apt-get update --yes && sudo apt-get install --yes musl-tools
       - name: Cache target dir
         uses: Swatinem/rust-cache@v2
       - name: Build
@@ -46,8 +34,6 @@ jobs:
           use-cross: true
           command: install
           args: --profile release --target ${{ env.RUST_CHANNEL }} --all-features --locked --path ${{ github.workspace }} --root dist
-      # - run: cargo build --locked --release --target 1.75.0-x86_64-unknown-linux-musl
-      # - run: cargo +${{ env.RUST_CHANNEL }} install --all-features --locked --profile release --path ${{ github.workspace }} --root dist
       - uses: actions/upload-artifact@master
         with:
           name: build
@@ -55,7 +41,7 @@ jobs:
   publish-image:
     runs-on: ubuntu-latest
     needs: build
-    # if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@master
