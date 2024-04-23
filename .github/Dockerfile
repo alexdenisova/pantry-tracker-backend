@@ -18,7 +18,7 @@ FROM base AS system
 
 RUN \
     apt-get update --yes \
-    && apt-get install --yes --no-install-recommends unzip musl musl-dev musl-tools build-essential pkgconf linux-libc-dev xutils-dev make python3 python3-pip wget git jq clang \
+    && apt-get install --yes --no-install-recommends unzip musl musl-dev musl-tools build-essential pkgconf linux-libc-dev xutils-dev make wget git jq clang \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/man /usr/share/doc /usr/share/doc-base
