@@ -64,15 +64,18 @@ pub struct DatabaseArguments {
 #[derive(Debug, Args)]
 pub struct RedisArguments {
     /// Redis URL
-    #[arg(long = "redis-url", id = "redis-url", env = "APP__REDIS_URL", default_value = DEFAULT_REDIS_URL,)]
+    #[arg(
+        long = "redis-url",
+        id = "redis-url",
+        env = "APP__REDIS_URL",
+        default_value = DEFAULT_REDIS_URL
+    )]
     url: Url,
 }
 
 impl RedisArguments {
     pub fn client(&self) -> AnyResult<RedisClient> {
-        RedisClient::new(
-            &self.url.to_string()
-        )
+        RedisClient::new(self.url.as_str())
     }
 }
 

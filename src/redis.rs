@@ -1,6 +1,5 @@
 use color_eyre::{eyre::eyre, Report, Result as AnyResult};
 use redis::{Client, Commands, Connection};
-use url::Url;
 
 use tokio::sync::{
     mpsc::{self, Sender},
