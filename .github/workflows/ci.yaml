@@ -73,7 +73,7 @@ jobs:
     needs: publish-image
     if: github.ref == 'refs/heads/main'
     env:
-      VALUES_DIR: "values"
+      VALUES_DIR: "values/pantry-tracker"
     steps:
       - name: Checkout into deployment
         uses: actions/checkout@v3
