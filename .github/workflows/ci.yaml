@@ -39,7 +39,8 @@ jobs:
       REGISTRY: ghcr.io
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@master
+      - name: Download build artifact
+        uses: actions/download-artifact@master
         with:
           name: build
           path: dist
@@ -56,3 +57,38 @@ jobs:
           TAG="$(cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"')"
           docker tag ${{ github.event.repository.name }} ${REGISTRY}/${{ github.actor }}/${{ github.event.repository.name }}:${TAG}
           docker push ${REGISTRY}/${{ github.actor }}/${{ github.event.repository.name }}:${TAG}
+
+          printf '%s:\n  image:\n    repository: %s\n    tag: %s\n' \
+          $(echo "${{ github.event.repository.name }}" | sed -E 's/-([a-z])/\U\1/g') \
+          "${REGISTRY}/${GITHUB_REPOSITORY}" \
+          "$TAG" \
+          > "${{ github.event.repository.name }}.values.yaml"
+      - name: Upload image artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: image-tag
+          path: "${{ github.event.repository.name }}.values.yaml"
+  push-values:
+    runs-on: ubuntu-latest
+    needs: publish-image
+    if: github.ref == 'refs/heads/main'
+    env:
+      VALUES_DIR: "values"
+    steps:
+      - name: Checkout into deployment
+        uses: actions/checkout@v3
+        with:
+          repository: alexdenisova/deployment
+          token: ${{ secrets.PACKAGES_TOKEN }}
+      - name: Download image artifact
+        uses: actions/download-artifact@master
+        with:
+          name: image-tag
+          path: ${{ env.VALUES_DIR }}
+      - name: Commit report
+        run: |
+          git config --global user.name 'Action Push'
+          git config --global user.email 'alexadenisova@gmail.com'
+          git add -A
+          git commit -m "New ${{ github.event.repository.name }} version"
+          git push
