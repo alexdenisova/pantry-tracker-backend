@@ -1,40 +1,37 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use titlecase::titlecase;
 use uuid::Uuid;
 
-use crate::database::users::dto::{CreateDto, ListParamsDto, UpdateDto, UserDto, UsersListDto};
-use crate::server::routes::utils::hash_password;
+use crate::database::ingredients::dto::{
+    CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto,
+};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
     pub name: String,
-    pub password: String,
-    pub admin: Option<bool>,
+    pub can_be_eaten_raw: Option<bool>,
 }
 
 impl From<CreatePayload> for CreateDto {
     fn from(val: CreatePayload) -> Self {
         CreateDto {
-            name: val.name,
-            password_hash: hash_password(&val.password),
-            admin: val.admin,
+            name: titlecase(&val.name),
+            can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
-    pub name: String,
-    pub password: String,
-    pub admin: Option<bool>,
+    pub can_be_eaten_raw: Option<bool>,
 }
 
 impl From<UpdatePayload> for UpdateDto {
     fn from(val: UpdatePayload) -> Self {
         UpdateDto {
-            name: val.name,
-            password_hash: hash_password(&val.password),
-            admin: val.admin,
+            name: None,
+            can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }
 }
@@ -51,36 +48,32 @@ impl From<ListQueryParams> for ListParamsDto {
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
-pub struct UserResponse {
+pub struct IngredientResponse {
     pub id: Uuid,
     pub name: String,
-    pub password_hash: String,
-    pub admin: bool,
+    pub can_be_eaten_raw: Option<bool>,
     pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
 }
 
-impl From<UserDto> for UserResponse {
-    fn from(val: UserDto) -> Self {
-        UserResponse {
+impl From<IngredientDto> for IngredientResponse {
+    fn from(val: IngredientDto) -> Self {
+        IngredientResponse {
             id: val.id,
             name: val.name,
-            password_hash: val.password_hash,
-            admin: val.admin,
+            can_be_eaten_raw: val.can_be_eaten_raw,
             created_at: val.created_at,
-            updated_at: val.updated_at,
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
-pub struct UsersListResponse {
-    pub items: Vec<UserResponse>,
+pub struct IngredientListResponse {
+    pub items: Vec<IngredientResponse>,
 }
 
-impl From<UsersListDto> for UsersListResponse {
-    fn from(val: UsersListDto) -> Self {
-        UsersListResponse {
+impl From<IngredientsListDto> for IngredientListResponse {
+    fn from(val: IngredientsListDto) -> Self {
+        IngredientListResponse {
             items: val.items.into_iter().map(Into::into).collect(),
         }
     }
