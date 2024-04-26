@@ -1,0 +1,82 @@
+name: Update Project Version
+description: |-
+  Updates and commits the project version.
+  Version is calculated with calver: MAJOR.MINOR.INCREMENT
+  where: MAJOR = year, MINOR = month
+
+
+inputs:
+  token:
+    description: Token for Github API
+    required: true
+  repo:
+    description: Github Repository <owner/name>
+    required: true
+outputs:
+  release_version:
+    description: "The new release version"
+    value: ${{ steps.compute.outputs.release_version }}
+  stop_workflow:
+    description: true if a new version was commited
+    value: ${{ steps.compute.outputs.needs_commit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute Version
+      shell: bash
+      id: compute
+      run: |-
+        current="$(cargo metadata --format-version=1 --no-deps | jq '.packages[0].version' | tr -d '"')"
+        release_version="$current"
+        needs_commit=false
+
+        if [[ ${{ github.ref }} != refs/tags* ]]; then
+          tags=($(curl -sL -X 'GET' \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ inputs.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ inputs.repo }}/git/refs/tags" \
+            | jq -r '.[] | .ref | sub("^refs/tags/"; "")'))
+
+          for tag in "${tags[@]}"; do
+            if [[ "$tag" == "$current" ]]; then
+              needs_commit=true
+              tag_prefix="$(date '+%y.%-m.')"
+              if [[ "$current" == "$tag_prefix"* ]]; then
+                old_inc=${current#*.*.}
+                new_inc=$(($old_inc + 1))
+                if [[ "$old_inc" != "0" ]] && [[ "$new_inc" == "1" ]]; then
+                  new_inc="0"
+                fi
+                release_version="$(printf '%s%s' "$tag_prefix" "$new_inc")"
+              else
+                release_version="$(printf '%s0' "$tag_prefix")"
+              fi
+            fi
+          done
+
+          if [[ "$needs_commit" == "true" ]]; then
+            echo "Computed new release/package version: $release_version"
+          else
+            echo "New release matches package version. No commit needed"
+          fi
+        fi
+        printf 'release_version=%s\n' "$release_version" >> $GITHUB_OUTPUT
+        printf 'needs_commit=%s\n' "$needs_commit" >> $GITHUB_OUTPUT
+    - uses: actions/checkout@v4
+      if: steps.compute.outputs.needs_commit == 'true'
+      with:
+        token: ${{ inputs.token }}
+    - name: Commit Version
+      shell: bash
+      if: steps.compute.outputs.needs_commit == 'true'
+      run: |
+        sed -i -e "s/^version = .*/version = \"${{ steps.compute.outputs.release_version }}\"/" Cargo.toml
+
+        git config --global user.name 'Version Update'
+        git config --global user.email 'alexadenisova@gmail.com'
+        git add -A
+        git commit -m "New package version - ${{ steps.compute.outputs.release_version }}"
+        git push
+        echo "Commited new version"
