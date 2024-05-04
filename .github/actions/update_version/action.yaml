@@ -73,6 +73,8 @@ runs:
       if: steps.compute.outputs.needs_commit == 'true'
       run: |
         sed -i -e "s/^version = .*/version = \"${{ steps.compute.outputs.release_version }}\"/" Cargo.toml
+        package_name="$(cargo metadata --format-version=1 --no-deps | jq '.packages[0].name' | tr -d '"')"
+        sed -i "N;s/name = \"${package_name}\"\nversion = .*/name = \"${package_name}\"\nversion = \"${{ steps.compute.outputs.release_version }}\"/g" Cargo.lock 
 
         git config --global user.name 'Version Update'
         git config --global user.email 'alexadenisova@gmail.com'
