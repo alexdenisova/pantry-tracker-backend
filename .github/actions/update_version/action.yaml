@@ -4,7 +4,6 @@ description: |-
   Version is calculated with calver: MAJOR.MINOR.INCREMENT
   where: MAJOR = year, MINOR = month
 
-
 inputs:
   token:
     description: Token for Github API
@@ -23,6 +22,10 @@ outputs:
 runs:
   using: composite
   steps:
+    - uses: actions/checkout@v4
+      if: steps.compute.outputs.needs_commit == 'true'
+      with:
+        token: ${{ inputs.token }}
     - name: Determine changed files
       uses: dorny/paths-filter@v3
       id: filter
@@ -74,10 +77,7 @@ runs:
         fi
         printf 'release_version=%s\n' "$release_version" >> $GITHUB_OUTPUT
         printf 'needs_commit=%s\n' "$needs_commit" >> $GITHUB_OUTPUT
-    - uses: actions/checkout@v4
-      if: steps.compute.outputs.needs_commit == 'true'
-      with:
-        token: ${{ inputs.token }}
+        cat $GITHUB_OUTPUT
     - name: Commit Version
       shell: bash
       if: steps.compute.outputs.needs_commit == 'true'
