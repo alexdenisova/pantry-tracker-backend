@@ -13,6 +13,8 @@ pub struct CreateDto {
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
     pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -24,6 +26,8 @@ pub struct UpdateDto {
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
     pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
 }
 
 #[derive(Deserialize, Debug, Default)]
@@ -41,6 +45,8 @@ pub struct PantryItemDto {
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
     pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
     pub user_id: Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -63,6 +69,8 @@ impl From<CreateDto> for Model {
             quantity: value.quantity,
             weight_grams: value.weight_grams,
             volume_milli_litres: value.volume_milli_litres,
+            essential: value.essential,
+            running_low: value.running_low,
             user_id: value.user_id,
             created_at: now,
             updated_at: now,
@@ -80,6 +88,8 @@ impl From<Model> for PantryItemDto {
             quantity: value.quantity,
             weight_grams: value.weight_grams,
             volume_milli_litres: value.volume_milli_litres,
+            essential: value.essential,
+            running_low: value.running_low,
             user_id: value.user_id,
             created_at: value.created_at,
             updated_at: value.updated_at,

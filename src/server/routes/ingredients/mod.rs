@@ -10,11 +10,11 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use uuid::Uuid;
 
-use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
+use crate::database::errors::{CreateError, DeleteError, GetError};
 use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
 use payload::{
-    CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams, UpdatePayload,
+    CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams,
 };
 
 pub struct IngredientRouter {}
@@ -29,7 +29,6 @@ impl IngredientRouter {
             .route(
                 "/:id",
                 get(IngredientRouter::get_ingredient)
-                    .patch(IngredientRouter::update_ingredient)
                     .delete(IngredientRouter::delete_ingredient),
             )
     }
@@ -111,35 +110,6 @@ impl IngredientRouter {
         (StatusCode::UNAUTHORIZED, Json(None))
     }
 
-    // TODO: make admin user who can Update/Delete ingredients
-    async fn update_ingredient(
-        State(state): State<AppState>,
-        jar: CookieJar,
-        Path(id): Path<Uuid>,
-        Json(payload): Json<UpdatePayload>,
-    ) -> (StatusCode, Json<Option<IngredientResponse>>) {
-        if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(true) = state.session_is_valid(session_id.value_trimmed()).await {
-                match state.db_client.update_ingredient(id, payload.into()).await {
-                    Ok(ingredient) => {
-                        log::info!("Updated ingredient with id {id:?}");
-                        return (StatusCode::OK, Json(Some(ingredient.into())));
-                    }
-                    Err(err) => {
-                        if let UpdateError::NotFound { .. } = err {
-                            log::error!("{}", err.to_string());
-                            return (StatusCode::NOT_FOUND, Json(None));
-                        }
-                        log::error!("{}", err.to_string());
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
-                    }
-                }
-            }
-        }
-        log::debug!("Could not update ingredient: user unauthorized");
-        (StatusCode::UNAUTHORIZED, Json(None))
-    }
-
     async fn delete_ingredient(
         State(state): State<AppState>,
         jar: CookieJar,
@@ -165,7 +135,7 @@ impl IngredientRouter {
                 }
             }
         }
-        log::debug!("Could not create ingredient: user unauthorized");
+        log::debug!("Could not delete ingredient: user unauthorized");
         StatusCode::UNAUTHORIZED
     }
 }

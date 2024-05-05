@@ -14,6 +14,8 @@ pub struct CreatePayload {
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
     pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
 }
 
 impl CreatePayload {
@@ -26,6 +28,8 @@ impl CreatePayload {
             quantity: self.quantity,
             weight_grams: self.weight_grams,
             volume_milli_litres: self.volume_milli_litres,
+            essential: self.essential,
+            running_low: self.running_low,
         }
     }
 }
@@ -38,6 +42,8 @@ pub struct UpdatePayload {
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
     pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
 }
 
 impl UpdatePayload {
@@ -50,6 +56,8 @@ impl UpdatePayload {
             quantity: self.quantity,
             weight_grams: self.weight_grams,
             volume_milli_litres: self.volume_milli_litres,
+            essential: self.essential,
+            running_low: self.running_low,
         }
     }
 }
@@ -80,6 +88,8 @@ pub struct PantryItemResponse {
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
     pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -95,6 +105,8 @@ impl From<PantryItemDto> for PantryItemResponse {
             quantity: val.quantity,
             weight_grams: val.weight_grams,
             volume_milli_litres: val.volume_milli_litres,
+            essential: val.essential,
+            running_low: val.running_low,
             created_at: val.created_at,
             updated_at: val.created_at,
         }

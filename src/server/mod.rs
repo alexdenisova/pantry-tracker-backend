@@ -3,10 +3,8 @@ mod state;
 
 use axum::routing::get;
 use axum::{extract::State, http::StatusCode, serve, Router};
-use http::{header::CONTENT_TYPE, Method};
 use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
-use tower_http::cors::{Any, CorsLayer};
 
 use crate::server::routes::login::LoginRouter;
 
@@ -47,11 +45,6 @@ impl Server {
             }
         })?;
 
-        // let cors = CorsLayer::new()
-        //     .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        //     .allow_origin(Any)
-        //     .allow_headers([CONTENT_TYPE]);
-
         let router: Router = Router::new()
             .route("/health", get(health))
             .nest("/login", LoginRouter::get())
@@ -65,7 +58,6 @@ impl Server {
             .nest("/users", UserRouter::get())
             .with_state(self.state)
             .fallback(Server::fallback);
-        // .layer(cors);
 
         serve(listener, router).await.map_err(|err| {
             log::error!("{}", err.to_string());
