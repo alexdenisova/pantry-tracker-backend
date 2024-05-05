@@ -4,6 +4,7 @@ use color_eyre::Result as AnyResult;
 use crate::database::DBTrait;
 use crate::server::routes::utils::hash_password;
 
+
 #[allow(clippy::too_many_lines)]
 pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<()> {
     let chicken = client
