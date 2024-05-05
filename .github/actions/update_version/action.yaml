@@ -72,13 +72,13 @@ runs:
                   release_version="$(printf '%s0' "$tag_prefix")"
                 fi
               fi
-            fi
-          done
+            done
 
-          if [[ "$needs_commit" == "true" ]]; then
-            echo "Computed new release/package version: $release_version"
-          else
-            echo "New release matches package version. No commit needed"
+            if [[ "$needs_commit" == "true" ]]; then
+              echo "Computed new release/package version: $release_version"
+            else
+              echo "New release matches package version. No commit needed"
+            fi
           fi
         fi
         printf 'release_version=%s\n' "$release_version" >> $GITHUB_OUTPUT
