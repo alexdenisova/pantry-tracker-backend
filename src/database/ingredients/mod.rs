@@ -1,12 +1,12 @@
 pub mod dto;
 
 use async_trait::async_trait;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{ActiveModelTrait, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
-use self::dto::{CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto};
+use self::dto::{CreateDto, IngredientDto, IngredientsListDto, ListParamsDto};
 use crate::database::{
-    errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
+    errors::{CreateError, DeleteError, GetError, ListError},
     DBClient,
 };
 use db_entities::ingredients::{ActiveModel, Column, Entity, Model};
@@ -20,11 +20,6 @@ pub trait DatabaseCRUD {
         &self,
         list_params: ListParamsDto,
     ) -> Result<IngredientsListDto, ListError>;
-    async fn update_ingredient(
-        &self,
-        id: Uuid,
-        request: UpdateDto,
-    ) -> Result<IngredientDto, UpdateError>;
     async fn delete_ingredient(&self, id: Uuid) -> Result<(), DeleteError>;
 }
 
@@ -78,41 +73,6 @@ impl DatabaseCRUD for DBClient {
             .map(Into::into)
             .collect(),
         })
-    }
-    async fn update_ingredient(
-        &self,
-        id: Uuid,
-        request: UpdateDto,
-    ) -> Result<IngredientDto, UpdateError> {
-        let ingredient: Model = Entity::find_by_id(id)
-            .one(&self.database_connection)
-            .await
-            .map_err(|err| UpdateError::Unexpected {
-                id,
-                error: err.into(),
-            })?
-            .ok_or(UpdateError::NotFound { id })?;
-        let mut ingredient: ActiveModel = ingredient.into();
-        if let Some(name) = request.name {
-            ingredient.name = Set(name);
-        }
-        ingredient.can_be_eaten_raw = Set(request.can_be_eaten_raw);
-
-        Ok(Entity::update(ingredient)
-            .filter(Column::Id.eq(id))
-            .exec(&self.database_connection)
-            .await
-            .map_err(|err| {
-                if let DbErr::RecordNotUpdated = err {
-                    UpdateError::NotFound { id }
-                } else {
-                    UpdateError::Unexpected {
-                        id,
-                        error: err.into(),
-                    }
-                }
-            })?
-            .into())
     }
     async fn delete_ingredient(&self, id: Uuid) -> Result<(), DeleteError> {
         if Entity::delete_by_id(id)
