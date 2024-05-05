@@ -11,9 +11,26 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
             name: "Chicken".to_owned(),
         })
         .await?;
+    let _ = client
+        .create_ingredient_name(crate::database::ingredient_names::dto::CreateDto {
+            name: "Chicken Breast".to_owned(),
+            ingredient_id: chicken.id,
+        })
+        .await?;
     let rice = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Rice".to_owned(),
+        })
+        .await?;
+    let garlic = client
+        .create_ingredient(crate::database::ingredients::dto::CreateDto {
+            name: "Garlic".to_owned(),
+        })
+        .await?;
+    let _ = client
+        .create_ingredient_name(crate::database::ingredient_names::dto::CreateDto {
+            name: "Garlic Clove".to_owned(),
+            ingredient_id: garlic.id,
         })
         .await?;
 

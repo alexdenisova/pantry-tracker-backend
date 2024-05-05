@@ -66,14 +66,15 @@ impl UpdatePayload {
 pub struct ListQueryParams {
     pub name_contains: Option<String>,
     pub max_expiration_date: Option<NaiveDate>,
-    pub user_id: Option<Uuid>,
+    pub ingredient_id: Option<Uuid>,
 }
 
 impl ListQueryParams {
     pub fn into_dto(self, user_id: Uuid) -> ListParamsDto {
         ListParamsDto {
             max_expiration_date: self.max_expiration_date,
-            user_id: Some(user_id),
+            user_id: self.ingredient_id.map(|_| user_id),
+            ingredient_id: self.ingredient_id,
         }
     }
 }

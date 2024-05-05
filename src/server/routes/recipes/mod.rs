@@ -262,6 +262,7 @@ async fn get_recipe_ingredients(
         .db_client
         .list_recipe_ingredients(crate::database::recipe_ingredients::dto::ListParamsDto {
             recipe_id: Some(recipe_id),
+            ingredient_id: None,
         })
         .await
     {
