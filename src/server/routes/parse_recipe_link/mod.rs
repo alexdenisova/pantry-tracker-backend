@@ -42,7 +42,8 @@ impl ParsedRecipeLinkRouter {
                 }
             };
             let name = get_name(&json);
-            let cooking_time_mins = get_cook_time(&json);
+            let prep_time_mins = get_time_field(&json, "prepTime");
+            let total_time_mins = get_time_field(&json, "totalTime");
             let image = get_image(&json);
             let ingredients = get_ingredients(&json);
             let instructions = get_instructions(&json);
@@ -50,7 +51,8 @@ impl ParsedRecipeLinkRouter {
                 StatusCode::OK,
                 Json(Some(ParsedRecipeLinkResponse {
                     name,
-                    cooking_time_mins,
+                    prep_time_mins,
+                    total_time_mins,
                     instructions,
                     image,
                     ingredients,
@@ -137,8 +139,8 @@ fn get_name(json: &Value) -> Option<String> {
     None
 }
 
-fn get_cook_time(json: &Value) -> Option<u32> {
-    if let Some(time) = json.get("totalTime") {
+fn get_time_field(json: &Value, key: &str) -> Option<u32> {
+    if let Some(time) = json.get(key) {
         if let Some(time) = time.as_str() {
             return iso8601_to_mins(time);
         }

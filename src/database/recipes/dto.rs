@@ -1,4 +1,4 @@
-use chrono::{NaiveDateTime, Utc};
+use chrono::{NaiveDate, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -8,16 +8,20 @@ use db_entities::recipes::Model;
 pub struct CreateDto {
     pub user_id: Uuid,
     pub name: String,
-    pub cooking_time_mins: Option<i32>,
+    pub prep_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
     pub image: Option<String>,
+    pub last_cooked: Option<NaiveDate>,
+    pub rating: Option<i32>,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
     pub name_contains: Option<String>,
-    pub cooking_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub user_id: Option<Uuid>,
 }
 
@@ -25,10 +29,14 @@ pub struct ListParamsDto {
 pub struct UpdateDto {
     pub user_id: Uuid,
     pub name: String,
-    pub cooking_time_mins: Option<i32>,
+    pub prep_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
     pub image: Option<String>,
+    pub last_cooked: Option<NaiveDate>,
+    pub rating: Option<i32>,
+    pub notes: Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
@@ -36,10 +44,14 @@ pub struct RecipeDto {
     pub id: Uuid,
     pub user_id: Uuid,
     pub name: String,
-    pub cooking_time_mins: Option<i32>,
+    pub prep_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
     pub image: Option<String>,
+    pub last_cooked: Option<NaiveDate>,
+    pub rating: Option<i32>,
+    pub notes: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -56,10 +68,14 @@ impl From<CreateDto> for Model {
             id: Uuid::new_v4(),
             user_id: value.user_id,
             name: value.name,
-            cooking_time_mins: value.cooking_time_mins,
+            prep_time_mins: value.prep_time_mins,
+            total_time_mins: value.total_time_mins,
             link: value.link,
             instructions: value.instructions,
             image: value.image,
+            last_cooked: value.last_cooked,
+            rating: value.rating,
+            notes: value.notes,
             created_at: now,
             updated_at: now,
         }
@@ -72,10 +88,14 @@ impl From<Model> for RecipeDto {
             id: value.id,
             user_id: value.user_id,
             name: value.name,
-            cooking_time_mins: value.cooking_time_mins,
+            prep_time_mins: value.prep_time_mins,
+            total_time_mins: value.total_time_mins,
             link: value.link,
             instructions: value.instructions,
             image: value.image,
+            last_cooked: value.last_cooked,
+            rating: value.rating,
+            notes: value.notes,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }

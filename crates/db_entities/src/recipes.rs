@@ -9,11 +9,15 @@ pub struct Model {
     pub id: Uuid,
     pub user_id: Uuid,
     pub name: String,
-    pub cooking_time_mins: Option<i32>,
+    pub prep_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub link: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub instructions: Option<String>,
-    pub image: Option<String>,
+    pub image: Option<String>, // TODO: make this link or file. Store files in S3
+    pub last_cooked: Option<Date>,
+    pub rating: Option<i32>,
+    pub notes: Option<String>,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }

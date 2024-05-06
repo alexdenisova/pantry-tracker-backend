@@ -117,7 +117,7 @@ async fn list_recipes(state: &AppState, user_id: Uuid) -> AnyResult<RecipesListD
         .list_recipes(RecipesListParamsDto {
             user_id: Some(user_id),
             name_contains: None,
-            cooking_time_mins: None,
+            total_time_mins: None,
         })
         .await
     {
