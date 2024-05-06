@@ -2,6 +2,7 @@
 
 pub mod prelude;
 
+pub mod ingredient_names;
 pub mod ingredients;
 pub mod pantry_items;
 pub mod recipe_ingredients;

@@ -1,3 +1,4 @@
+pub mod ingredient_names;
 pub mod ingredients;
 pub mod login;
 pub mod pantry_items;

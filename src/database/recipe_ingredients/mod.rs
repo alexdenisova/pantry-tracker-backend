@@ -69,18 +69,23 @@ impl DatabaseCRUD for DBClient {
         &self,
         list_params: ListParamsDto,
     ) -> Result<RecipeIngredientsListDto, ListError> {
+        let mut entity = match list_params.recipe_id {
+            Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
+            None => Entity::find(),
+        };
+        entity = match list_params.ingredient_id {
+            Some(value) => entity.filter(Column::IngredientId.eq(value)),
+            None => entity,
+        };
         Ok(RecipeIngredientsListDto {
-            items: match list_params.recipe_id {
-                Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
-                None => Entity::find(),
-            }
-            .order_by_desc(Column::UpdatedAt)
-            .all(&self.database_connection)
-            .await
-            .map_err(|err| ListError::Unexpected { error: err.into() })?
-            .into_iter()
-            .map(Into::into)
-            .collect(),
+            items: entity
+                .order_by_desc(Column::UpdatedAt)
+                .all(&self.database_connection)
+                .await
+                .map_err(|err| ListError::Unexpected { error: err.into() })?
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         })
     }
     async fn update_recipe_ingredient(
