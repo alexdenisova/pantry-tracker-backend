@@ -149,7 +149,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Recipes::Image).string())
                     .col(ColumnDef::new(Recipes::LastCooked).date())
                     .col(ColumnDef::new(Recipes::Rating).integer())
-                    .col(ColumnDef::new(Recipes::Notes).string())
+                    .col(ColumnDef::new(Recipes::Notes).text())
                     .col(
                         ColumnDef::new(Recipes::CreatedAt)
                             .timestamp()
