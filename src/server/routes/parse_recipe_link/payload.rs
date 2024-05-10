@@ -11,7 +11,8 @@ pub struct ListQueryParams {
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct ParsedRecipeLinkResponse {
     pub name: Option<String>,
-    pub cooking_time_mins: Option<u32>,
+    pub prep_time_mins: Option<u32>,
+    pub total_time_mins: Option<u32>,
     pub instructions: Option<String>,
     pub image: Option<Url>,
     pub ingredients: Vec<ParsedRecipeIngredient>,

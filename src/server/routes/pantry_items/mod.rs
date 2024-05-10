@@ -83,6 +83,14 @@ impl PantryItemRouter {
     ) -> (StatusCode, Json<Option<PantryItemListResponse>>) {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+                let user_id = if query_params.all.is_some_and(|x| x) {
+                    if !state.user_is_admin(user_id).await.is_ok_and(|x| x) {
+                        return (StatusCode::UNAUTHORIZED, Json(None));
+                    }
+                    None
+                } else {
+                    Some(user_id)
+                };
                 let name_pattern = query_params.name_contains.clone();
                 match state
                     .db_client

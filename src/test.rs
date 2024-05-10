@@ -90,9 +90,42 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
         })
         .await?;
 
-    let chicken_recipe = client.create_recipe(crate::database::recipes::dto::CreateDto{ user_id: user.id, name: "Plain Chicken".to_owned(), cooking_time_mins: Some(20), link: None, instructions: Some("cook chicken".to_owned()), image: Some("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvUbhcjwZxp2hfQGoc_ChtsN-4FF2nQ1U3yUmwEv8YSQ&s".to_owned())  }).await?;
-    let chicken_recipe_2 = client.create_recipe(crate::database::recipes::dto::CreateDto{ user_id: admin.id, name: "Plain Chicken".to_owned(), cooking_time_mins: Some(20), link: None, instructions: Some("cook chicken".to_owned()), image: Some("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvUbhcjwZxp2hfQGoc_ChtsN-4FF2nQ1U3yUmwEv8YSQ&s".to_owned())  }).await?;
-    let chicken_rice_recipe = client.create_recipe(crate::database::recipes::dto::CreateDto{ user_id: user.id, name: "Chicken Rice".to_owned(), cooking_time_mins: Some(30), link: Some("https://iowagirleats.com/one-pot-chicken-and-rice/".to_owned()), instructions: None, image: Some("https://static01.nyt.com/images/2023/11/14/multimedia/MB-Chicken-and-Ric-cvjf/MB-Chicken-and-Ric-cvjf-superJumbo.jpg".to_owned())  }).await?;
+    let chicken_recipe = client.create_recipe(crate::database::recipes::dto::CreateDto{
+        user_id: user.id,
+        name: "Plain Chicken".to_owned(),
+        total_time_mins: Some(20),
+        link: None,
+        instructions: Some("cook chicken".to_owned()),
+        image: Some("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvUbhcjwZxp2hfQGoc_ChtsN-4FF2nQ1U3yUmwEv8YSQ&s".to_owned()),
+        prep_time_mins: Some(5),
+        last_cooked: NaiveDate::from_ymd_opt(2024, 5, 4),
+        rating: Some(5),
+        notes: Some("add more salt".to_owned()) 
+    }).await?;
+    let chicken_recipe_2 = client.create_recipe(crate::database::recipes::dto::CreateDto{
+        user_id: admin.id,
+        name: "Plain Chicken".to_owned(),
+        total_time_mins: Some(20),
+        link: None,
+        instructions: Some("cook chicken".to_owned()),
+        image: Some("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvUbhcjwZxp2hfQGoc_ChtsN-4FF2nQ1U3yUmwEv8YSQ&s".to_owned()),
+        prep_time_mins: Some(5),
+        last_cooked: NaiveDate::from_ymd_opt(2024, 5, 4),
+        rating: Some(5),
+        notes: Some("add more salt".to_owned()) 
+    }).await?;
+    let chicken_rice_recipe = client.create_recipe(crate::database::recipes::dto::CreateDto{
+        user_id: user.id,
+        name: "Chicken Rice".to_owned(),
+        total_time_mins: Some(30),
+        link: Some("https://iowagirleats.com/one-pot-chicken-and-rice/".to_owned()),
+        instructions: None,
+        image: Some("https://static01.nyt.com/images/2023/11/14/multimedia/MB-Chicken-and-Ric-cvjf/MB-Chicken-and-Ric-cvjf-superJumbo.jpg".to_owned()),
+        prep_time_mins: Some(5),
+        last_cooked: NaiveDate::from_ymd_opt(2024, 4, 24),
+        rating: Some(3),
+        notes: None
+    }).await?;
 
     client
         .create_recipe_ingredient(crate::database::recipe_ingredients::dto::CreateDto {
