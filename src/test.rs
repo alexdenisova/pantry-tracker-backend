@@ -54,7 +54,6 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
         .create_pantry_item(crate::database::pantry_items::dto::CreateDto {
             ingredient_id: chicken.id,
             user_id: user.id,
-            purchase_date: None,
             expiration_date: Some(NaiveDate::from_ymd_opt(2024, 4, 20).unwrap()),
             quantity: None,
             weight_grams: Some(400),
@@ -67,7 +66,6 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
         .create_pantry_item(crate::database::pantry_items::dto::CreateDto {
             ingredient_id: chicken.id,
             user_id: admin.id,
-            purchase_date: None,
             expiration_date: Some(NaiveDate::from_ymd_opt(2024, 4, 20).unwrap()),
             quantity: None,
             weight_grams: Some(400),
@@ -80,7 +78,6 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
         .create_pantry_item(crate::database::pantry_items::dto::CreateDto {
             ingredient_id: rice.id,
             user_id: user.id,
-            purchase_date: None,
             expiration_date: None,
             quantity: None,
             weight_grams: Some(400),

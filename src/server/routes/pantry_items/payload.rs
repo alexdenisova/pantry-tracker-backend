@@ -9,7 +9,6 @@ use crate::database::pantry_items::dto::{
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
     pub ingredient_id: Uuid,
-    pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<NaiveDate>,
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
@@ -23,7 +22,6 @@ impl CreatePayload {
         CreateDto {
             ingredient_id: self.ingredient_id,
             user_id,
-            purchase_date: self.purchase_date,
             expiration_date: self.expiration_date,
             quantity: self.quantity,
             weight_grams: self.weight_grams,
@@ -37,7 +35,6 @@ impl CreatePayload {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
     pub ingredient_id: Uuid,
-    pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<NaiveDate>,
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
@@ -51,7 +48,6 @@ impl UpdatePayload {
         UpdateDto {
             ingredient_id: self.ingredient_id,
             user_id,
-            purchase_date: self.purchase_date,
             expiration_date: self.expiration_date,
             quantity: self.quantity,
             weight_grams: self.weight_grams,
@@ -85,7 +81,6 @@ pub struct PantryItemResponse {
     pub id: Uuid,
     pub ingredient_id: Uuid,
     pub user_id: Uuid,
-    pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<String>,
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
@@ -102,7 +97,6 @@ impl From<PantryItemDto> for PantryItemResponse {
             id: val.id,
             ingredient_id: val.ingredient_id,
             user_id: val.user_id,
-            purchase_date: val.purchase_date,
             expiration_date: val.expiration_date.map(|date| date.to_string()),
             quantity: val.quantity,
             weight_grams: val.weight_grams,

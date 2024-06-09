@@ -101,7 +101,6 @@ impl DatabaseCRUD for DBClient {
         let mut pantry_item: ActiveModel = pantry_item.into();
         pantry_item.ingredient_id = Set(request.ingredient_id);
         pantry_item.user_id = Set(request.user_id);
-        pantry_item.purchase_date = Set(request.purchase_date);
         pantry_item.expiration_date = Set(request.expiration_date);
         pantry_item.quantity = Set(request.quantity);
         pantry_item.weight_grams = Set(request.weight_grams);
