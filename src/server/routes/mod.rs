@@ -1,4 +1,4 @@
-pub mod ingredient_names;
+mod errors;
 pub mod ingredients;
 pub mod login;
 pub mod pantry_items;

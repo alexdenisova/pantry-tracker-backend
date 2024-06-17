@@ -32,9 +32,9 @@ pub struct UpdateDto {
 
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
-    pub max_expiration_date: Option<NaiveDate>,
     pub user_id: Option<Uuid>,
     pub ingredient_id: Option<Uuid>,
+    pub max_expiration_date: Option<NaiveDate>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]

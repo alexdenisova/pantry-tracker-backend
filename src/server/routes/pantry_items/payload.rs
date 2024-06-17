@@ -64,17 +64,17 @@ impl UpdatePayload {
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
+    pub with_name: Option<bool>,
     pub name_contains: Option<String>,
     pub max_expiration_date: Option<NaiveDate>,
     pub ingredient_id: Option<Uuid>,
-    pub all: Option<bool>,
 }
 
 impl ListQueryParams {
-    pub fn into_dto(self, user_id: Option<Uuid>) -> ListParamsDto {
+    pub fn into_dto(self, user_id: Uuid) -> ListParamsDto {
         ListParamsDto {
             max_expiration_date: self.max_expiration_date,
-            user_id,
+            user_id: Some(user_id),
             ingredient_id: self.ingredient_id,
         }
     }

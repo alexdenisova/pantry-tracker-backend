@@ -66,6 +66,7 @@ pub struct RecipeIngredientResponse {
     pub id: Uuid,
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
+    // pub ingredient_name: String,
     pub amount: Option<String>,
     pub unit: Option<String>,
     pub optional: bool,

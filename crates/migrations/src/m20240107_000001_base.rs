@@ -31,35 +31,6 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(IngredientNames::Table)
-                    .col(ColumnDef::new(IngredientNames::Id).uuid().primary_key())
-                    .col(
-                        ColumnDef::new(IngredientNames::IngredientId)
-                            .uuid()
-                            .not_null(),
-                    )
-                    .col(ColumnDef::new(IngredientNames::Name).string().not_null())
-                    .col(
-                        ColumnDef::new(IngredientNames::CreatedAt)
-                            .timestamp()
-                            .not_null()
-                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
-                    )
-                    .foreign_key(
-                        ForeignKey::create()
-                            .from_tbl(IngredientNames::Table)
-                            .from_col(IngredientNames::IngredientId)
-                            .to_tbl(Ingredients::Table)
-                            .to_col(Ingredients::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
-                    )
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_table(
-                Table::create()
                     .table(Users::Table)
                     .col(ColumnDef::new(Users::Id).uuid().primary_key())
                     .col(ColumnDef::new(Users::Name).string().not_null())
@@ -254,9 +225,6 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(PantryItems::Table).to_owned())
             .await?;
         manager
-            .drop_table(Table::drop().table(IngredientNames::Table).to_owned())
-            .await?;
-        manager
             .drop_table(Table::drop().table(Ingredients::Table).to_owned())
             .await?;
         manager
@@ -273,15 +241,6 @@ pub enum Ingredients {
     Name,
     CreatedAt,
     // InSeason,
-}
-
-#[derive(Iden)]
-pub enum IngredientNames {
-    Table,
-    Id,
-    IngredientId,
-    Name,
-    CreatedAt,
 }
 
 #[derive(Iden)]
