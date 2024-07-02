@@ -12,7 +12,7 @@ use crate::database::errors::{CreateError, DeleteError, GetError, ListError, Upd
 pub enum AppError {
     Unauthorized,
     AlreadyExists { id: Uuid },
-    NotFound { id: Uuid },
+    NotFound { id: String },
     UnprocessableEntity { error: AnyError },
     Other { error: AnyError },
 }
@@ -74,7 +74,7 @@ impl From<GetError> for AppError {
     fn from(val: GetError) -> Self {
         log::error!("{}", val);
         match val {
-            GetError::NotFound { id } => AppError::NotFound { id },
+            GetError::NotFound { id } => AppError::NotFound { id: id.to_string() },
             GetError::Unexpected { id: _, error } => AppError::Other { error },
         }
     }
@@ -84,7 +84,7 @@ impl From<UpdateError> for AppError {
     fn from(val: UpdateError) -> Self {
         log::error!("{}", val);
         match val {
-            UpdateError::NotFound { id } => AppError::NotFound { id },
+            UpdateError::NotFound { id } => AppError::NotFound { id: id.to_string() },
             UpdateError::Unexpected { id: _, error } => AppError::Other { error },
         }
     }
@@ -94,7 +94,7 @@ impl From<DeleteError> for AppError {
     fn from(val: DeleteError) -> Self {
         log::error!("{}", val);
         match val {
-            DeleteError::NotFound { id } => AppError::NotFound { id },
+            DeleteError::NotFound { id } => AppError::NotFound { id: id.to_string() },
             DeleteError::Unexpected { id: _, error } => AppError::Other { error },
         }
     }
@@ -115,7 +115,7 @@ impl From<VerifyError> for AppError {
         log::error!("{}", val);
         match val {
             VerifyError::Unauthorized => AppError::Unauthorized,
-            VerifyError::NotFound { user_id } => AppError::NotFound { id: user_id },
+            VerifyError::NotFound { user_id } => AppError::NotFound { id: user_id.to_string() },
             VerifyError::Other { error } => AppError::Other { error },
         }
     }
