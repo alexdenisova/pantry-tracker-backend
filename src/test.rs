@@ -16,7 +16,7 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
             name: "Rice".to_owned(),
         })
         .await?;
-    let garlic = client
+    let _garlic = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Garlic".to_owned(),
         })

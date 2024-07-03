@@ -22,10 +22,7 @@ pub struct RecipeRouter {}
 impl RecipeRouter {
     pub fn router() -> Router<AppState> {
         Router::new()
-            .route(
-                "/",
-                get(RecipeRouter::list).post(RecipeRouter::create),
-            )
+            .route("/", get(RecipeRouter::list).post(RecipeRouter::create))
             .route(
                 "/:id",
                 get(RecipeRouter::get)
@@ -104,7 +101,7 @@ impl RecipeRouter {
     ) -> Result<(StatusCode, Json<RecipeResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verify_user(&state, id, user_id).await?;
+                verify_user(&state, user_id, id).await?;
                 let recipe = state
                     .db_client
                     .update_recipe(id, payload.into_dto(user_id))
@@ -123,7 +120,7 @@ impl RecipeRouter {
     ) -> Result<StatusCode, AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verify_user(&state, id, user_id).await?;
+                verify_user(&state, user_id, id).await?;
                 state.db_client.delete_recipe(id).await?;
                 log::info!("Deleted recipe with id {:?}", id);
                 return Ok(StatusCode::NO_CONTENT);

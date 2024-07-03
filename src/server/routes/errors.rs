@@ -44,9 +44,9 @@ impl IntoResponse for AppError {
             AppError::UnprocessableEntity { error } => {
                 (StatusCode::UNPROCESSABLE_ENTITY, error.to_string())
             }
-            AppError::Other { error: _ } => (
+            AppError::Other { error } => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Something went wrong".to_owned(),
+                format!("Something went wrong: {error}"),
             ),
         };
 
