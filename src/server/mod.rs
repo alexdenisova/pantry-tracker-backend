@@ -12,7 +12,6 @@ use self::routes::ingredients::IngredientRouter;
 use self::routes::pantry_items::PantryItemRouter;
 use self::routes::parse_ingredients::ParseIngredientsRouter;
 use self::routes::parse_recipe_link::ParsedRecipeLinkRouter;
-use self::routes::possible_recipes::PossibleRecipesRouter;
 use self::routes::recipe_ingredients::RecipeIngredientRouter;
 use self::routes::recipes::RecipeRouter;
 use self::routes::users::UserRouter;
@@ -47,15 +46,14 @@ impl Server {
 
         let router: Router = Router::new()
             .route("/health", get(health))
-            .nest("/login", LoginRouter::get())
-            .nest("/ingredients", IngredientRouter::get())
-            .nest("/pantry_items", PantryItemRouter::get())
-            .nest("/parse_ingredients", ParseIngredientsRouter::get())
-            .nest("/parse_recipe_link", ParsedRecipeLinkRouter::get())
-            .nest("/possible_recipes", PossibleRecipesRouter::list())
-            .nest("/recipes", RecipeRouter::get())
-            .nest("/recipe_ingredients", RecipeIngredientRouter::get())
-            .nest("/users", UserRouter::get())
+            .nest("/login", LoginRouter::router())
+            .nest("/ingredients", IngredientRouter::router())
+            .nest("/pantry_items", PantryItemRouter::router())
+            .nest("/parse_ingredients", ParseIngredientsRouter::router())
+            .nest("/parse_recipe_link", ParsedRecipeLinkRouter::router())
+            .nest("/recipes", RecipeRouter::router())
+            .nest("/recipe_ingredients", RecipeIngredientRouter::router())
+            .nest("/users", UserRouter::router())
             .with_state(self.state)
             .fallback(Server::fallback);
 

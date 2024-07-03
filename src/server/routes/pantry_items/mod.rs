@@ -20,21 +20,21 @@ use payload::{
 pub struct PantryItemRouter {}
 
 impl PantryItemRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new()
             .route(
                 "/",
-                get(PantryItemRouter::list_pantry_items).post(PantryItemRouter::create_pantry_item),
+                get(PantryItemRouter::list).post(PantryItemRouter::create),
             )
             .route(
                 "/:id",
-                get(PantryItemRouter::get_pantry_item)
-                    .put(PantryItemRouter::update_pantry_item)
-                    .delete(PantryItemRouter::delete_pantry_item),
+                get(PantryItemRouter::get)
+                    .put(PantryItemRouter::update)
+                    .delete(PantryItemRouter::delete),
             )
     }
 
-    async fn create_pantry_item(
+    async fn create(
         State(state): State<AppState>,
         jar: CookieJar,
         Json(payload): Json<CreatePayload>,
@@ -63,7 +63,7 @@ impl PantryItemRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn list_pantry_items(
+    async fn list(
         State(state): State<AppState>,
         jar: CookieJar,
         Query(query_params): Query<ListQueryParams>,
@@ -98,7 +98,7 @@ impl PantryItemRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn get_pantry_item(
+    async fn get(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
@@ -119,7 +119,7 @@ impl PantryItemRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn update_pantry_item(
+    async fn update(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
@@ -127,7 +127,7 @@ impl PantryItemRouter {
     ) -> Result<(StatusCode, Json<PantryItemResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verified_user(&state, id, user_id)
+                verify_user(&state, id, user_id)
                     .await
                     .map_err(Into::<AppError>::into)?;
                 if !validate_quantity(
@@ -149,14 +149,14 @@ impl PantryItemRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn delete_pantry_item(
+    async fn delete(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
     ) -> Result<StatusCode, AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verified_user(&state, id, user_id)
+                verify_user(&state, id, user_id)
                     .await
                     .map_err(Into::<AppError>::into)?;
                 state
@@ -174,7 +174,7 @@ impl PantryItemRouter {
     }
 }
 
-async fn verified_user(state: &AppState, id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
+async fn verify_user(state: &AppState, id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
     if let Ok(true) = state.user_is_admin(user_id).await {
         return Ok(());
     }

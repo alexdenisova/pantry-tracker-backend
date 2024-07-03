@@ -1,5 +1,6 @@
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use color_eyre::eyre::eyre;
 use color_eyre::Report as AnyError;
 use http::StatusCode;
 use serde::Serialize;
@@ -7,6 +8,8 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::database::errors::{CreateError, DeleteError, GetError, ListError, UpdateError};
+use crate::redis::RedisError;
+use crate::server::routes::parse_recipe_link::GetRecipeJsonError;
 
 #[derive(Debug)]
 pub enum AppError {
@@ -97,6 +100,31 @@ impl From<DeleteError> for AppError {
         match val {
             DeleteError::NotFound { id } => AppError::NotFound { id: id.to_string() },
             DeleteError::Unexpected { id: _, error } => AppError::Other { error },
+        }
+    }
+}
+
+impl From<RedisError> for AppError {
+    fn from(val: RedisError) -> Self {
+        log::error!("{}", val);
+        match val {
+            RedisError::Channel { error } | RedisError::Redis { error } => {
+                AppError::Other { error }
+            }
+        }
+    }
+}
+
+impl From<GetRecipeJsonError> for AppError {
+    fn from(val: GetRecipeJsonError) -> Self {
+        log::error!("{}", val);
+        match val {
+            GetRecipeJsonError::LinkUnavailable { link, err } => AppError::UnprocessableEntity {
+                error: eyre!("Could not GET {link}: {err}"),
+            },
+            GetRecipeJsonError::BadFormat { link, err } => AppError::UnprocessableEntity {
+                error: eyre!("Could not parse respone from {link}: {err}"),
+            },
         }
     }
 }

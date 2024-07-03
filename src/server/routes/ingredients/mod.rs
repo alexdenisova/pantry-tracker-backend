@@ -18,19 +18,19 @@ use payload::{CreatePayload, IngredientListResponse, IngredientResponse, ListQue
 pub struct IngredientRouter {}
 
 impl IngredientRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new()
             .route(
                 "/",
-                get(IngredientRouter::list_ingredients).post(IngredientRouter::create_ingredient),
+                get(IngredientRouter::list).post(IngredientRouter::create),
             )
             .route(
                 "/:id",
-                get(IngredientRouter::get_ingredient).delete(IngredientRouter::delete_ingredient),
+                get(IngredientRouter::get).delete(IngredientRouter::delete),
             )
     }
 
-    async fn create_ingredient(
+    async fn create(
         State(state): State<AppState>,
         jar: CookieJar,
         Json(payload): Json<CreatePayload>,
@@ -49,7 +49,7 @@ impl IngredientRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn list_ingredients(
+    async fn list(
         State(state): State<AppState>,
         jar: CookieJar,
         Query(query_params): Query<ListQueryParams>,
@@ -68,7 +68,7 @@ impl IngredientRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn get_ingredient(
+    async fn get(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
@@ -87,7 +87,7 @@ impl IngredientRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn delete_ingredient(
+    async fn delete(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,

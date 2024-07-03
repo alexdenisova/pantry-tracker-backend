@@ -21,22 +21,22 @@ use payload::{
 pub struct RecipeIngredientRouter {}
 
 impl RecipeIngredientRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new()
             .route(
                 "/",
-                get(RecipeIngredientRouter::list_recipe_ingredients)
-                    .post(RecipeIngredientRouter::create_recipe_ingredient),
+                get(RecipeIngredientRouter::list)
+                    .post(RecipeIngredientRouter::create),
             )
             .route(
                 "/:id",
-                get(RecipeIngredientRouter::get_recipe_ingredient)
-                    .put(RecipeIngredientRouter::update_recipe_ingredient)
-                    .delete(RecipeIngredientRouter::delete_recipe_ingredient),
+                get(RecipeIngredientRouter::get)
+                    .put(RecipeIngredientRouter::update)
+                    .delete(RecipeIngredientRouter::delete),
             )
     }
 
-    async fn create_recipe_ingredient(
+    async fn create(
         State(state): State<AppState>,
         jar: CookieJar,
         Json(payload): Json<CreatePayload>,
@@ -58,7 +58,7 @@ impl RecipeIngredientRouter {
         Err(AppError::Unauthorized)
     }
 
-    pub async fn list_recipe_ingredients(
+    pub async fn list(
         State(state): State<AppState>,
         jar: CookieJar,
         Query(query_params): Query<ListQueryParams>,
@@ -80,7 +80,7 @@ impl RecipeIngredientRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn get_recipe_ingredient(
+    async fn get(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
@@ -95,7 +95,7 @@ impl RecipeIngredientRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn update_recipe_ingredient(
+    async fn update(
         State(state): State<AppState>,
         Path(id): Path<Uuid>,
         jar: CookieJar,
@@ -116,7 +116,7 @@ impl RecipeIngredientRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn delete_recipe_ingredient(
+    async fn delete(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,

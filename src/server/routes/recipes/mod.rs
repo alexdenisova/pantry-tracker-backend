@@ -20,21 +20,21 @@ use uuid::Uuid;
 pub struct RecipeRouter {}
 
 impl RecipeRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new()
             .route(
                 "/",
-                get(RecipeRouter::list_recipes).post(RecipeRouter::create_recipe),
+                get(RecipeRouter::list).post(RecipeRouter::create),
             )
             .route(
                 "/:id",
-                get(RecipeRouter::get_recipe)
-                    .put(RecipeRouter::update_recipe)
-                    .delete(RecipeRouter::delete_recipe),
+                get(RecipeRouter::get)
+                    .put(RecipeRouter::update)
+                    .delete(RecipeRouter::delete),
             )
     }
 
-    async fn create_recipe(
+    async fn create(
         State(state): State<AppState>,
         jar: CookieJar,
         Json(payload): Json<CreatePayload>,
@@ -52,33 +52,34 @@ impl RecipeRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn list_recipes(
+    async fn list(
         State(state): State<AppState>,
         jar: CookieJar,
         Query(query_params): Query<ListQueryParams>,
     ) -> Result<(StatusCode, Json<RecipeListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-        let ingredient_ids = query_params.ingredient_ids.clone();
-        let recipes = if let Some(ingredient_ids) = ingredient_ids {
-            RecipeListResponse {
-                items: list_recipes_containing_ingredients(state, ingredient_ids, user_id).await?,
-            }
-        } else {
-            state
-                .db_client
-                .list_recipes(query_params.into_dto(Some(user_id)))
-                .await?
-                .into()
-        };
-        log::info!("{:?} recipes collected", recipes.items.len());
-        return Ok((StatusCode::OK, Json(recipes)));
+                let ingredient_ids = query_params.ingredient_ids.clone();
+                let recipes = if let Some(ingredient_ids) = ingredient_ids {
+                    RecipeListResponse {
+                        items: list_recipes_containing_ingredients(state, ingredient_ids, user_id)
+                            .await?,
+                    }
+                } else {
+                    state
+                        .db_client
+                        .list_recipes(query_params.into_dto(Some(user_id)))
+                        .await?
+                        .into()
+                };
+                log::info!("{:?} recipes collected", recipes.items.len());
+                return Ok((StatusCode::OK, Json(recipes)));
             }
         }
         Err(AppError::Unauthorized)
     }
 
-    async fn get_recipe(
+    async fn get(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
@@ -95,7 +96,7 @@ impl RecipeRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn update_recipe(
+    async fn update(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
@@ -115,7 +116,7 @@ impl RecipeRouter {
         Err(AppError::Unauthorized)
     }
 
-    async fn delete_recipe(
+    async fn delete(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,

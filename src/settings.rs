@@ -7,7 +7,7 @@ use log::LevelFilter;
 use tokio::sync::mpsc::Sender;
 use url::Url;
 
-use crate::redis::{new_redis_sender, RedisClient, RedisCommand};
+use crate::redis::{new_redis_sender, RedisClient, RedisCommand, RedisResult};
 
 const DEFAULT_DATABASE_URL: &str = "postgres://postgres:postgres@localhost:5432/postgres";
 const DEFAULT_REDIS_URL: &str = "redis://localhost:6379/0";
@@ -74,7 +74,7 @@ pub struct RedisArguments {
 }
 
 impl RedisArguments {
-    pub fn client(&self) -> AnyResult<RedisClient> {
+    pub fn client(&self) -> RedisResult<RedisClient> {
         RedisClient::new(self.url.as_str())
     }
 }

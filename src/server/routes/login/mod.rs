@@ -8,13 +8,12 @@ use axum::{
 };
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::CookieJar;
-use color_eyre::Result as AnyResult;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use tokio::sync::mpsc::Sender;
 use uuid::Uuid;
 
-use crate::redis::{RedisCommand, RedisCommands};
+use crate::redis::{RedisCommand, RedisCommands, RedisResult};
 use crate::server::routes::errors::AppError;
 use crate::server::routes::utils::verify_password;
 use crate::server::routes::COOKIE_KEY;
@@ -25,7 +24,7 @@ const SESSION_TTL_DAYS: u16 = 7;
 pub struct LoginRouter {}
 
 impl LoginRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new().route("/", post(LoginRouter::login).delete(LoginRouter::logout))
     }
 
@@ -49,7 +48,7 @@ impl LoginRouter {
                             jar.add(Cookie::new(COOKIE_KEY, session_id)),
                             Redirect::to("/"),
                         )),
-                        Err(err) => Err(AppError::Other { error: err }),
+                        Err(err) => Err(AppError::Other { error: err.into() }),
                     }
                 } else {
                     log::info!("Wrong password from {:?}", username);
@@ -69,7 +68,7 @@ impl LoginRouter {
             if let Ok(true) = state.session_is_valid(session_id).await {
                 return match delete_session(session_id, &state.redis_sender).await {
                     Ok(()) => Ok((jar.remove(COOKIE_KEY), Redirect::to("/login"))),
-                    Err(error) => Err(AppError::Other { error }),
+                    Err(err) => Err(AppError::Other { error: err.into() }),
                 };
             }
         }
@@ -77,7 +76,7 @@ impl LoginRouter {
     }
 }
 
-async fn create_session(user_id: Uuid, redis_sender: &Sender<RedisCommand>) -> AnyResult<String> {
+async fn create_session(user_id: Uuid, redis_sender: &Sender<RedisCommand>) -> RedisResult<String> {
     let session_id: String = thread_rng()
         .sample_iter(&Alphanumeric)
         .take(30)
@@ -90,6 +89,6 @@ async fn create_session(user_id: Uuid, redis_sender: &Sender<RedisCommand>) -> A
     Ok(session_id)
 }
 
-async fn delete_session(session_id: &str, redis_sender: &Sender<RedisCommand>) -> AnyResult<()> {
+async fn delete_session(session_id: &str, redis_sender: &Sender<RedisCommand>) -> RedisResult<()> {
     redis_sender.delete(session_id).await
 }
