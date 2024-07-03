@@ -68,7 +68,7 @@ impl LoginRouter {
             let session_id = session_id.value_trimmed();
             if let Ok(true) = state.session_is_valid(session_id).await {
                 return match delete_session(session_id, &state.redis_sender).await {
-                    Ok(_) => Ok((jar.remove(COOKIE_KEY), Redirect::to("/login"))),
+                    Ok(()) => Ok((jar.remove(COOKIE_KEY), Redirect::to("/login"))),
                     Err(error) => Err(AppError::Other { error }),
                 };
             }

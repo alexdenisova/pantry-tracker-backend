@@ -7,13 +7,11 @@ use axum::{
     Router,
 };
 use axum_extra::extract::CookieJar;
-use color_eyre::Result as AnyResult;
+use color_eyre::eyre::eyre;
 use payload::{CreatePayload, ListQueryParams, RecipeListResponse, RecipeResponse, UpdatePayload};
 use urlencoding::decode;
 
-use crate::database::errors::{CreateError, DeleteError, GetError, UpdateError};
-use crate::database::recipe_ingredients::dto::RecipeIngredientsListDto;
-use crate::database::recipes::dto::RecipesListDto;
+use crate::database::errors::ListError;
 use crate::server::routes::errors::{AppError, VerifyError};
 use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
@@ -61,16 +59,20 @@ impl RecipeRouter {
     ) -> Result<(StatusCode, Json<RecipeListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                let ingredient_ids = query_params.ingredient_ids.clone();
-                let recipes = state
-                    .db_client
-                    .list_recipes(query_params.into_dto(Some(user_id)))
-                    .await?;
-                if let Some(ingredient_ids) = ingredient_ids {
-                    return list_recipes_with_ingredients(state, ingredient_ids, recipes).await;
-                }
-                log::info!("{:?} recipes collected", recipes.items.len());
-                return Ok((StatusCode::OK, Json(recipes.into())));
+        let ingredient_ids = query_params.ingredient_ids.clone();
+        let recipes = if let Some(ingredient_ids) = ingredient_ids {
+            RecipeListResponse {
+                items: list_recipes_containing_ingredients(state, ingredient_ids, user_id).await?,
+            }
+        } else {
+            state
+                .db_client
+                .list_recipes(query_params.into_dto(Some(user_id)))
+                .await?
+                .into()
+        };
+        log::info!("{:?} recipes collected", recipes.items.len());
+        return Ok((StatusCode::OK, Json(recipes)));
             }
         }
         Err(AppError::Unauthorized)
@@ -83,21 +85,10 @@ impl RecipeRouter {
     ) -> Result<(StatusCode, Json<RecipeResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                match state.db_client.get_recipe(id).await {
-                    Ok(recipe) => {
-                        if recipe.user_id == user_id {
-                            log::info!("Got recipe with id {:?}", recipe.id);
-                            return (StatusCode::OK, Json(Some(recipe.into())));
-                        }
-                    }
-                    Err(err) => {
-                        if let GetError::NotFound { .. } = err {
-                            log::error!("{}", err.to_string());
-                            return (StatusCode::NOT_FOUND, Json(None));
-                        }
-                        log::error!("{}", err.to_string());
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
-                    }
+                let recipe = state.db_client.get_recipe(id).await?;
+                if recipe.user_id == user_id {
+                    log::info!("Got recipe with id {:?}", recipe.id);
+                    return Ok((StatusCode::OK, Json(recipe.into())));
                 }
             }
         }
@@ -112,27 +103,13 @@ impl RecipeRouter {
     ) -> Result<(StatusCode, Json<RecipeResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                if let Err(err) = verify_user(&state, id, user_id).await {
-                    return (err.into(), Json(None));
-                }
-                match state
+                verify_user(&state, id, user_id).await?;
+                let recipe = state
                     .db_client
                     .update_recipe(id, payload.into_dto(user_id))
-                    .await
-                {
-                    Ok(recipe) => {
-                        log::info!("Updated recipe with id {id:?}");
-                        return (StatusCode::OK, Json(Some(recipe.into())));
-                    }
-                    Err(err) => {
-                        if let UpdateError::NotFound { .. } = err {
-                            log::error!("{}", err.to_string());
-                            return (StatusCode::NOT_FOUND, Json(None));
-                        }
-                        log::error!("{}", err.to_string());
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
-                    }
-                }
+                    .await?;
+                log::info!("Updated recipe with id {id:?}");
+                return Ok((StatusCode::OK, Json(recipe.into())));
             }
         }
         Err(AppError::Unauthorized)
@@ -145,23 +122,10 @@ impl RecipeRouter {
     ) -> Result<StatusCode, AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                if let Err(err) = verify_user(&state, id, user_id).await {
-                    return err.into();
-                }
-                match state.db_client.delete_recipe(id).await {
-                    Ok(()) => {
-                        log::info!("Deleted recipe with id {:?}", id);
-                        return StatusCode::NO_CONTENT;
-                    }
-                    Err(err) => {
-                        if let DeleteError::NotFound { .. } = err {
-                            log::error!("{}", err.to_string());
-                            return StatusCode::NOT_FOUND;
-                        }
-                        log::error!("{}", err.to_string());
-                        return StatusCode::INTERNAL_SERVER_ERROR;
-                    }
-                }
+                verify_user(&state, id, user_id).await?;
+                state.db_client.delete_recipe(id).await?;
+                log::info!("Deleted recipe with id {:?}", id);
+                return Ok(StatusCode::NO_CONTENT);
             }
         }
         Err(AppError::Unauthorized)
@@ -177,65 +141,29 @@ async fn verify_user(state: &AppState, user_id: Uuid, recipe_id: Uuid) -> Result
     Err(VerifyError::Unauthorized)
 }
 
-async fn list_recipes_with_ingredients(
+async fn list_recipes_containing_ingredients(
     state: AppState,
     ingredient_ids: String,
-    recipes: RecipesListDto,
-) -> (StatusCode, Json<Option<RecipeListResponse>>) {
+    user_id: Uuid,
+) -> Result<Vec<RecipeResponse>, ListError> {
     if let Ok(ingredient_ids) = decode(&ingredient_ids) {
         if let Ok(ingredient_ids) = serde_json::from_str::<Vec<Uuid>>(&ingredient_ids) {
-            let mut recipes_with_ingredients: Vec<RecipeResponse> = Vec::new();
+            let recipes: Vec<RecipeResponse> = state
+                .db_client
+                .list_recipes_join(crate::database::recipes::dto::ListRecipeJoinParamsDto {
+                    user_id,
+                    ingredient_ids,
+                })
+                .await?
+                .into_iter()
+                .map(Into::into)
+                .collect();
 
-            'outer: for recipe in recipes.items {
-                let Ok(recipe_ingredients) = get_recipe_ingredients(&state, recipe.id).await else {
-                    return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
-                };
-
-                for id in &ingredient_ids {
-                    if !recipe_ingredients
-                        .items
-                        .iter()
-                        .any(|ingredient| ingredient.ingredient_id.eq(id))
-                    {
-                        continue 'outer;
-                    }
-                }
-                recipes_with_ingredients.push(recipe.into());
-            }
-            log::info!(
-                "{:?} recipes with ingredients collected",
-                recipes_with_ingredients.len()
-            );
-            return (
-                StatusCode::OK,
-                Json(Some(RecipeListResponse {
-                    items: recipes_with_ingredients,
-                })),
-            );
+            log::info!("{:?} recipes collected", recipes.len());
+            return Ok(recipes);
         }
     }
-    (StatusCode::UNPROCESSABLE_ENTITY, Json(None))
-}
-
-async fn get_recipe_ingredients(
-    state: &AppState,
-    recipe_id: Uuid,
-) -> AnyResult<RecipeIngredientsListDto> {
-    match state
-        .db_client
-        .list_recipe_ingredients(crate::database::recipe_ingredients::dto::ListParamsDto {
-            recipe_id: Some(recipe_id),
-            ingredient_id: None,
-        })
-        .await
-    {
-        Ok(recipe_ingredients) => {
-            log::info!("{:?} recipes collected", recipe_ingredients.items.len());
-            Ok(recipe_ingredients)
-        }
-        Err(err) => {
-            log::error!("{}", err.to_string());
-            Err(err.into())
-        }
-    }
+    Err(ListError::Unprocessable {
+        error: eyre!("ingredient_ids must be list of uuids seperated by commas."),
+    })
 }

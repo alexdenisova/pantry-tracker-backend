@@ -8,6 +8,7 @@ use uuid::Uuid;
 use self::dto::{
     CreateDto, ListParamsDto, RecipeIngredientDto, RecipeIngredientsListDto, UpdateDto,
 };
+
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
@@ -69,13 +70,9 @@ impl DatabaseCRUD for DBClient {
         &self,
         list_params: ListParamsDto,
     ) -> Result<RecipeIngredientsListDto, ListError> {
-        let mut entity = match list_params.recipe_id {
+        let entity = match list_params.recipe_id {
             Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
             None => Entity::find(),
-        };
-        entity = match list_params.ingredient_id {
-            Some(value) => entity.filter(Column::IngredientId.eq(value)),
-            None => entity,
         };
         Ok(RecipeIngredientsListDto {
             items: entity

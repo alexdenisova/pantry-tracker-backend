@@ -1,5 +1,6 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::hash::Hash;
 use uuid::Uuid;
 
 use db_entities::recipes::Model;
@@ -25,6 +26,12 @@ pub struct ListParamsDto {
     pub user_id: Option<Uuid>,
 }
 
+#[derive(Deserialize, Debug, Default)]
+pub struct ListRecipeJoinParamsDto {
+    pub user_id: Uuid,
+    pub ingredient_ids: Vec<Uuid>,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct UpdateDto {
     pub user_id: Uuid,
@@ -39,7 +46,7 @@ pub struct UpdateDto {
     pub notes: Option<String>,
 }
 
-#[derive(Serialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Debug, Clone, Eq)]
 pub struct RecipeDto {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -54,6 +61,18 @@ pub struct RecipeDto {
     pub notes: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+impl Hash for RecipeDto {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl PartialEq for RecipeDto {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]

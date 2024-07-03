@@ -116,7 +116,7 @@ impl From<RecipeDto> for RecipeResponse {
             rating: val.rating,
             notes: val.notes,
             created_at: val.created_at,
-            updated_at: val.created_at,
+            updated_at: val.updated_at,
         }
     }
 }

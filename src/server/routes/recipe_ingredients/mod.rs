@@ -144,7 +144,7 @@ async fn verify_user(
     }
     if let Some(recipe_id) = recipe_id {
         let recipe = state.db_client.get_recipe(recipe_id).await?;
-        log::debug!("Got recipe with id {:?}", recipe.id);
+        log::info!("Got recipe with id {:?}", recipe.id);
         if recipe.user_id == user_id {
             return Ok(());
         }

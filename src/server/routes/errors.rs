@@ -66,6 +66,7 @@ impl From<ListError> for AppError {
         log::error!("{}", val);
         match val {
             ListError::Unexpected { error } => AppError::Other { error },
+            ListError::Unprocessable { error } => AppError::UnprocessableEntity { error },
         }
     }
 }
@@ -115,7 +116,9 @@ impl From<VerifyError> for AppError {
         log::error!("{}", val);
         match val {
             VerifyError::Unauthorized => AppError::Unauthorized,
-            VerifyError::NotFound { user_id } => AppError::NotFound { id: user_id.to_string() },
+            VerifyError::NotFound { user_id } => AppError::NotFound {
+                id: user_id.to_string(),
+            },
             VerifyError::Other { error } => AppError::Other { error },
         }
     }

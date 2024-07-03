@@ -47,7 +47,6 @@ impl PossibleRecipesRouter {
                         .db_client
                         .list_recipe_ingredients(RecipeIngredientListDto {
                             recipe_id: Some(recipe.id),
-                            ingredient_id: None,
                         })
                         .await
                     {
