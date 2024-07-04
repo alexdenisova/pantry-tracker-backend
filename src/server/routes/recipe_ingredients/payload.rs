@@ -56,7 +56,6 @@ impl From<ListQueryParams> for ListParamsDto {
     fn from(val: ListQueryParams) -> Self {
         ListParamsDto {
             recipe_id: val.recipe_id,
-            ingredient_id: val.ingredient_id,
         }
     }
 }
@@ -66,6 +65,7 @@ pub struct RecipeIngredientResponse {
     pub id: Uuid,
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
+    // pub ingredient_name: String,
     pub amount: Option<String>,
     pub unit: Option<String>,
     pub optional: bool,

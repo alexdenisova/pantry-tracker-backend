@@ -2,10 +2,15 @@ pub mod dto;
 
 use async_trait::async_trait;
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
+use migrations::{Expr, Func};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, JoinType, QueryFilter, QueryOrder,
+    QuerySelect, RelationTrait, Set,
+};
 use uuid::Uuid;
 
 use self::dto::{CreateDto, ListParamsDto, PantryItemDto, PantryItemsListDto, UpdateDto};
+use crate::database::pantry_items::dto::PantryItemJoinDto;
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
@@ -16,7 +21,8 @@ use db_entities::pantry_items::{ActiveModel, Column, Entity, Model};
 pub trait DatabaseCRUD {
     async fn create_pantry_item(&self, request: CreateDto) -> Result<PantryItemDto, CreateError>;
     async fn get_pantry_item(&self, id: Uuid) -> Result<PantryItemDto, GetError>;
-    async fn list_pantry_items(
+    async fn get_pantry_item_join(&self, id: Uuid) -> Result<PantryItemJoinDto, GetError>;
+    async fn list_pantry_items_join(
         &self,
         list_params: ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError>;
@@ -57,30 +63,56 @@ impl DatabaseCRUD for DBClient {
             .ok_or(GetError::NotFound { id })?
             .into())
     }
-    async fn list_pantry_items(
+    async fn get_pantry_item_join(&self, id: Uuid) -> Result<PantryItemJoinDto, GetError> {
+        Ok(Entity::find_by_id(id)
+            .join(
+                JoinType::InnerJoin,
+                db_entities::pantry_items::Relation::Ingredients.def(),
+            )
+            .column_as(db_entities::ingredients::Column::Name, "ingredient_name")
+            .into_model::<PantryItemJoinDto>()
+            .one(&self.database_connection)
+            .await
+            .map_err(|err| GetError::Unexpected {
+                id,
+                error: err.into(),
+            })?
+            .ok_or(GetError::NotFound { id })?)
+    }
+    async fn list_pantry_items_join(
         &self,
         list_params: ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError> {
-        let mut entity = match list_params.user_id {
-            Some(value) => Entity::find().filter(Column::UserId.eq(value)),
-            None => Entity::find(),
-        };
-        entity = match list_params.ingredient_id {
-            Some(value) => entity.filter(Column::IngredientId.eq(value)),
-            None => entity,
-        };
+        let mut entity = Entity::find();
+        if let Some(value) = list_params.user_id {
+            entity = entity.filter(Column::UserId.eq(value));
+        }
+        if let Some(value) = list_params.ingredient_id {
+            entity = entity.filter(Column::IngredientId.eq(value));
+        }
+        if let Some(value) = list_params.name_contains {
+            entity = entity.filter(
+                Expr::expr(Func::lower(Expr::col(
+                    db_entities::ingredients::Column::Name,
+                )))
+                .like(format!("%{}%", value.to_lowercase())),
+            );
+        }
         Ok(PantryItemsListDto {
             items: match list_params.max_expiration_date {
                 Some(value) => entity.filter(Column::ExpirationDate.lte(value)),
                 None => entity,
             }
+            .join(
+                JoinType::InnerJoin,
+                db_entities::pantry_items::Relation::Ingredients.def(),
+            )
+            .column_as(db_entities::ingredients::Column::Name, "ingredient_name")
             .order_by_desc(Column::UpdatedAt)
+            .into_model::<PantryItemJoinDto>()
             .all(&self.database_connection)
             .await
-            .map_err(|err| ListError::Unexpected { error: err.into() })?
-            .into_iter()
-            .map(Into::into)
-            .collect(),
+            .map_err(|err| ListError::Unexpected { error: err.into() })?,
         })
     }
     async fn update_pantry_item(
@@ -88,7 +120,6 @@ impl DatabaseCRUD for DBClient {
         id: Uuid,
         request: UpdateDto,
     ) -> Result<PantryItemDto, UpdateError> {
-        println!("in 0");
         let pantry_item: Model = Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
@@ -97,7 +128,6 @@ impl DatabaseCRUD for DBClient {
                 error: err.into(),
             })?
             .ok_or(UpdateError::NotFound { id })?;
-        println!("in");
         let mut pantry_item: ActiveModel = pantry_item.into();
         pantry_item.ingredient_id = Set(request.ingredient_id);
         pantry_item.user_id = Set(request.user_id);

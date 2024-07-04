@@ -7,11 +7,13 @@ use axum::{
     routing::get,
     Router,
 };
+use color_eyre::eyre::eyre;
 use regex::Regex;
 use thiserror::Error;
 use urlencoding::decode;
 
 use self::payload::{ListQueryParams, ParseIngredientsResponse, ParsedRecipeIngredient};
+use crate::server::routes::errors::AppError;
 use crate::server::AppState;
 
 const MEASUREMENTS: [&str; 16] = [
@@ -37,7 +39,7 @@ const INGREDIENT_REGEX: &str = r"^((\d*)( |\.|\/)?(\d*\/\d*|\d+|½|⅔|⅓|¼)?)
 pub struct ParseIngredientsRouter {}
 
 impl ParseIngredientsRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new().route("/", get(ParseIngredientsRouter::parse_ingredients))
     }
 
@@ -45,16 +47,18 @@ impl ParseIngredientsRouter {
     async fn parse_ingredients(
         State(_): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
-    ) -> (StatusCode, Json<Option<ParseIngredientsResponse>>) {
+    ) -> Result<(StatusCode, Json<ParseIngredientsResponse>), AppError> {
         if let Ok(input) = decode(&query_params.text) {
             let ingredients = input.replace(|c: char| !c.is_ascii() && !c.is_alphanumeric(), "");
             let parsed = parse_ingredients(ingredients.split('\n').collect());
-            return (
+            return Ok((
                 StatusCode::OK,
-                Json(Some(ParseIngredientsResponse { items: parsed })),
-            );
+                Json(ParseIngredientsResponse { items: parsed }),
+            ));
         }
-        (StatusCode::UNPROCESSABLE_ENTITY, Json(None))
+        Err(AppError::UnprocessableEntity {
+            error: eyre!("Ingredients must be urlencoded."),
+        })
     }
 }
 
@@ -137,74 +141,3 @@ fn parse_unit(unit: &str) -> Result<String, ParseUnitError> {
         unit: unit.to_owned(),
     })
 }
-
-// #[derive(Error, Debug)]
-// pub enum ParseAmountError {
-//     #[error("Could not parse amount: {err}")]
-//     Unknown { err: String },
-// }
-
-// fn parse_amount(line: &str, re: &Regex) -> Result<f32, ParseAmountError> {
-//     let caps = re.captures(line).unwrap();
-//     let mut calc_amount = String::new();
-//     if let Some(whole_part) = caps.get(1) {
-//         let whole_part = whole_part.as_str();
-//         if let Some(cap_2) = caps.get(2) {
-//             let cap_2 = cap_2.as_str();
-//             if cap_2 == "/" {
-//                 // if a fraction
-//                 if let Some(denominator) = caps.get(3) {
-//                     let numerator: f32 = whole_part.parse().map_err(|err: ParseFloatError| {
-//                         ParseAmountError::Unknown {
-//                             err: err.to_string(),
-//                         }
-//                     })?;
-//                     let denominator: f32 =
-//                         denominator
-//                             .as_str()
-//                             .parse()
-//                             .map_err(|err: ParseFloatError| ParseAmountError::Unknown {
-//                                 err: err.to_string(),
-//                             })?;
-//                     return Ok(numerator / denominator);
-//                 }
-//                 return Err(ParseAmountError::Unknown {
-//                     err: "strange format".to_owned(),
-//                 });
-//             }
-//         }
-//         calc_amount += whole_part;
-//         calc_amount += ".";
-//         if let Some(decimal_part) = caps.get(3) {
-//             calc_amount += &decimal_to_string(decimal_part.as_str());
-//         } else {
-//             calc_amount += "0";
-//         }
-//     }
-//     calc_amount
-//         .parse()
-//         .map_err(|err: ParseFloatError| ParseAmountError::Unknown {
-//             err: err.to_string(),
-//         })
-// }
-
-// fn decimal_to_string(decimal_part: &str) -> String {
-//     match decimal_part {
-//         "½" => "5".to_string(),
-//         "⅔" => "67".to_string(),
-//         "⅓" => "33".to_string(),
-//         "¼" => "25".to_string(),
-//         d => {
-//             let re = Regex::new(r"^(\d+)(\/)?(\d+)?").unwrap();
-//             if re.is_match(d) {
-//                 parse_amount(d, &re)
-//                     .unwrap()
-//                     .to_string()
-//                     .trim_start_matches("0.")
-//                     .to_string()
-//             } else {
-//                 d.to_string()
-//             }
-//         }
-//     }
-// }
