@@ -7,11 +7,13 @@ use axum::{
     routing::get,
     Router,
 };
+use color_eyre::eyre::eyre;
 use regex::Regex;
 use thiserror::Error;
 use urlencoding::decode;
 
 use self::payload::{ListQueryParams, ParseIngredientsResponse, ParsedRecipeIngredient};
+use crate::server::routes::errors::AppError;
 use crate::server::AppState;
 
 const MEASUREMENTS: [&str; 16] = [
@@ -45,16 +47,18 @@ impl ParseIngredientsRouter {
     async fn parse_ingredients(
         State(_): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
-    ) -> (StatusCode, Json<Option<ParseIngredientsResponse>>) {
+    ) -> Result<(StatusCode, Json<ParseIngredientsResponse>), AppError> {
         if let Ok(input) = decode(&query_params.text) {
             let ingredients = input.replace(|c: char| !c.is_ascii() && !c.is_alphanumeric(), "");
             let parsed = parse_ingredients(ingredients.split('\n').collect());
-            return (
+            return Ok((
                 StatusCode::OK,
-                Json(Some(ParseIngredientsResponse { items: parsed })),
-            );
+                Json(ParseIngredientsResponse { items: parsed }),
+            ));
         }
-        (StatusCode::UNPROCESSABLE_ENTITY, Json(None))
+        Err(AppError::UnprocessableEntity {
+            error: eyre!("Ingredients must be urlencoded."),
+        })
     }
 }
 

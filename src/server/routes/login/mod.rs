@@ -35,27 +35,21 @@ impl LoginRouter {
     ) -> Result<(CookieJar, Redirect), AppError> {
         let username = payload.username.clone();
         let password = payload.password.clone().unwrap_or_default();
-        match state.db_client.list_users(payload.into()).await {
-            Ok(users) => {
-                if users.items.is_empty() {
-                    return Err(AppError::NotFound { id: username });
-                }
-                let user = &users.items[0];
-                if verify_password(&password, &user.password_hash) {
-                    log::info!("User {:?} logged in", username);
-                    match create_session(user.id, &state.redis_sender).await {
-                        Ok(session_id) => Ok((
-                            jar.add(Cookie::new(COOKIE_KEY, session_id)),
-                            Redirect::to("/"),
-                        )),
-                        Err(err) => Err(AppError::Other { error: err.into() }),
-                    }
-                } else {
-                    log::info!("Wrong password from {:?}", username);
-                    Err(AppError::Unauthorized)
-                }
-            }
-            Err(err) => Err(AppError::Other { error: err.into() }),
+        let users = state.db_client.list_users(payload.into()).await?;
+        if users.items.is_empty() {
+            return Err(AppError::NotFound { id: username });
+        }
+        let user = &users.items[0];
+        if verify_password(&password, &user.password_hash) {
+            log::info!("User {:?} logged in", username);
+            let session_id = create_session(user.id, &state.redis_sender).await?;
+            Ok((
+                jar.add(Cookie::new(COOKIE_KEY, session_id)),
+                Redirect::to("/"),
+            ))
+        } else {
+            log::info!("Wrong password from {:?}", username);
+            Err(AppError::Unauthorized)
         }
     }
 
@@ -65,11 +59,9 @@ impl LoginRouter {
     ) -> Result<(CookieJar, Redirect), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             let session_id = session_id.value_trimmed();
-            if let Ok(true) = state.session_is_valid(session_id).await {
-                return match delete_session(session_id, &state.redis_sender).await {
-                    Ok(()) => Ok((jar.remove(COOKIE_KEY), Redirect::to("/login"))),
-                    Err(err) => Err(AppError::Other { error: err.into() }),
-                };
+            if state.session_is_valid(session_id).await? {
+                delete_session(session_id, &state.redis_sender).await?;
+                return Ok((jar.remove(COOKIE_KEY), Redirect::to("/login")));
             }
         }
         Err(AppError::Unauthorized)

@@ -37,10 +37,7 @@ impl IntoResponse for AppError {
                 StatusCode::CONFLICT,
                 format!("Item with id {id} already exists"),
             ),
-            AppError::NotFound { id } => (
-                StatusCode::NOT_FOUND,
-                format!("Item with id {id} not found"),
-            ),
+            AppError::NotFound { id } => (StatusCode::NOT_FOUND, format!("Item {id} not found")),
             AppError::UnprocessableEntity { error } => {
                 (StatusCode::UNPROCESSABLE_ENTITY, error.to_string())
             }

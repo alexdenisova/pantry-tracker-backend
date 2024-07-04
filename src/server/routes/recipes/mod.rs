@@ -37,7 +37,7 @@ impl RecipeRouter {
         Json(payload): Json<CreatePayload>,
     ) -> Result<(StatusCode, Json<RecipeResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 let recipe = state
                     .db_client
                     .create_recipe(payload.into_dto(user_id))
@@ -55,7 +55,7 @@ impl RecipeRouter {
         Query(query_params): Query<ListQueryParams>,
     ) -> Result<(StatusCode, Json<RecipeListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 let ingredient_ids = query_params.ingredient_ids.clone();
                 let recipes = if let Some(ingredient_ids) = ingredient_ids {
                     RecipeListResponse {
@@ -82,7 +82,7 @@ impl RecipeRouter {
         Path(id): Path<Uuid>,
     ) -> Result<(StatusCode, Json<RecipeResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 let recipe = state.db_client.get_recipe(id).await?;
                 if recipe.user_id == user_id {
                     log::info!("Got recipe with id {:?}", recipe.id);
@@ -100,8 +100,8 @@ impl RecipeRouter {
         Json(payload): Json<UpdatePayload>,
     ) -> Result<(StatusCode, Json<RecipeResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verify_user(&state, user_id, id).await?;
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
+                verify_user(&state, id, user_id).await?;
                 let recipe = state
                     .db_client
                     .update_recipe(id, payload.into_dto(user_id))
@@ -119,8 +119,8 @@ impl RecipeRouter {
         Path(id): Path<Uuid>,
     ) -> Result<StatusCode, AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verify_user(&state, user_id, id).await?;
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
+                verify_user(&state, id, user_id).await?;
                 state.db_client.delete_recipe(id).await?;
                 log::info!("Deleted recipe with id {:?}", id);
                 return Ok(StatusCode::NO_CONTENT);
@@ -130,7 +130,7 @@ impl RecipeRouter {
     }
 }
 
-async fn verify_user(state: &AppState, user_id: Uuid, recipe_id: Uuid) -> Result<(), VerifyError> {
+async fn verify_user(state: &AppState, recipe_id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
     let recipe = state.db_client.get_recipe(recipe_id).await?;
     if recipe.user_id == user_id {
         log::info!("Got recipe with id {:?}", recipe.id);

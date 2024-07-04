@@ -36,7 +36,7 @@ impl UserRouter {
         Json(payload): Json<CreatePayload>,
     ) -> Result<(StatusCode, Json<UserResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 if Some(true) != payload.admin || state.user_is_admin(user_id).await? {
                     let user = state.db_client.create_user(payload.into()).await?;
                     log::info!("User with id {:?} created", user.id.to_string());
@@ -53,7 +53,7 @@ impl UserRouter {
         Query(query_params): Query<ListQueryParams>,
     ) -> Result<(StatusCode, Json<UsersListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 if state.user_is_admin(user_id).await? {
                     let users = state.db_client.list_users(query_params.into()).await?;
                     log::info!("{:?} users collected", users.items.len());
@@ -70,7 +70,7 @@ impl UserRouter {
         Path(id): Path<Uuid>,
     ) -> Result<(StatusCode, Json<UserResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 if user_id == id || state.user_is_admin(user_id).await? {
                     let user = state.db_client.get_user(id).await?;
                     log::info!("Got user with id {:?}", user.id);
@@ -88,7 +88,7 @@ impl UserRouter {
         Json(payload): Json<UpdatePayload>,
     ) -> Result<(StatusCode, Json<UserResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 if Some(true) != payload.admin || state.user_is_admin(user_id).await? {
                     let user = state.db_client.update_user(id, payload.into()).await?;
                     log::info!("Updated user with id {id:?}");
@@ -105,7 +105,7 @@ impl UserRouter {
         jar: CookieJar,
     ) -> Result<StatusCode, AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 if user_id == id || state.user_is_admin(user_id).await? {
                     state.db_client.delete_user(id).await?;
                     log::info!("Deleted user with id {:?}", id);

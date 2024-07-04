@@ -64,7 +64,7 @@ impl UpdatePayload {
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
-    pub with_name: Option<bool>,
+    pub with_name: Option<bool>, // TODO: always return ingredient_name
     pub name_contains: Option<String>,
     pub max_expiration_date: Option<NaiveDate>,
     pub ingredient_id: Option<Uuid>,

@@ -40,8 +40,8 @@ impl PantryItemRouter {
         Json(payload): Json<CreatePayload>,
     ) -> Result<(StatusCode, Json<PantryItemResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                if !validate_quantity(
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
+                if !valid_quantity(
                     payload.quantity,
                     payload.weight_grams,
                     payload.volume_milli_litres,
@@ -51,8 +51,7 @@ impl PantryItemRouter {
                 let pantry_item = state
                     .db_client
                     .create_pantry_item(payload.into_dto(user_id))
-                    .await
-                    .map_err(Into::<AppError>::into)?;
+                    .await?;
                 log::info!(
                     "Pantry item with id {:?} created",
                     pantry_item.id.to_string()
@@ -69,21 +68,19 @@ impl PantryItemRouter {
         Query(query_params): Query<ListQueryParams>,
     ) -> Result<(StatusCode, Json<PantryItemListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 let name_pattern = query_params.name_contains.clone();
                 let mut pantry_items = state
                     .db_client
                     .list_pantry_items(query_params.into_dto(user_id))
-                    .await
-                    .map_err(Into::<AppError>::into)?;
+                    .await?; // TODO: make this an sql query
                 if let Some(pattern) = name_pattern {
                     let mut filtered_items = Vec::new();
                     for item in pantry_items.items {
                         let ingredient_name = state
                             .db_client
                             .get_ingredient(item.ingredient_id)
-                            .await
-                            .map_err(Into::<AppError>::into)?
+                            .await?
                             .name;
                         if ingredient_name.to_lowercase().contains(&pattern) {
                             filtered_items.push(item);
@@ -104,12 +101,8 @@ impl PantryItemRouter {
         Path(id): Path<Uuid>,
     ) -> Result<(StatusCode, Json<PantryItemResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                let pantry_item = state
-                    .db_client
-                    .get_pantry_item(id)
-                    .await
-                    .map_err(Into::<AppError>::into)?;
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
+                let pantry_item = state.db_client.get_pantry_item(id).await?;
                 if pantry_item.user_id == user_id {
                     log::info!("Got pantry item with id {:?}", pantry_item.id);
                     return Ok((StatusCode::OK, Json(pantry_item.into())));
@@ -126,11 +119,9 @@ impl PantryItemRouter {
         Json(payload): Json<UpdatePayload>,
     ) -> Result<(StatusCode, Json<PantryItemResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verify_user(&state, id, user_id)
-                    .await
-                    .map_err(Into::<AppError>::into)?;
-                if !validate_quantity(
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
+                verify_user(&state, id, user_id).await?;
+                if !valid_quantity(
                     payload.quantity,
                     payload.weight_grams,
                     payload.volume_milli_litres,
@@ -140,8 +131,7 @@ impl PantryItemRouter {
                 let pantry_item = state
                     .db_client
                     .update_pantry_item(id, payload.into_dto(user_id))
-                    .await
-                    .map_err(Into::<AppError>::into)?;
+                    .await?;
                 log::info!("Updated pantry item with id {id:?}");
                 return Ok((StatusCode::OK, Json(pantry_item.into())));
             }
@@ -155,15 +145,9 @@ impl PantryItemRouter {
         Path(id): Path<Uuid>,
     ) -> Result<StatusCode, AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                verify_user(&state, id, user_id)
-                    .await
-                    .map_err(Into::<AppError>::into)?;
-                state
-                    .db_client
-                    .delete_pantry_item(id)
-                    .await
-                    .map_err(Into::<AppError>::into)?;
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
+                verify_user(&state, id, user_id).await?;
+                state.db_client.delete_pantry_item(id).await?;
                 {
                     log::info!("Deleted pantry item with id {:?}", id);
                     return Ok(StatusCode::NO_CONTENT);
@@ -174,15 +158,11 @@ impl PantryItemRouter {
     }
 }
 
-async fn verify_user(state: &AppState, id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
-    if let Ok(true) = state.user_is_admin(user_id).await {
+async fn verify_user(state: &AppState, pantry_item_id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
+    if state.user_is_admin(user_id).await? {
         return Ok(());
     }
-    let pantry_item = state
-        .db_client
-        .get_pantry_item(id)
-        .await
-        .map_err(Into::<VerifyError>::into)?;
+    let pantry_item = state.db_client.get_pantry_item(pantry_item_id).await?;
     if pantry_item.user_id == user_id {
         log::info!("Got pantry item with id {:?}", pantry_item.id);
         return Ok(());
@@ -190,7 +170,7 @@ async fn verify_user(state: &AppState, id: Uuid, user_id: Uuid) -> Result<(), Ve
     Err(VerifyError::Unauthorized)
 }
 
-fn validate_quantity(
+fn valid_quantity(
     quantity: Option<i32>,
     weight_grams: Option<i32>,
     volume_milli_litres: Option<i32>,
