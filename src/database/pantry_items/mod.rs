@@ -83,14 +83,13 @@ impl DatabaseCRUD for DBClient {
         &self,
         list_params: ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError> {
-        let mut entity = match list_params.user_id {
-            Some(value) => Entity::find().filter(Column::UserId.eq(value)),
-            None => Entity::find(),
-        };
-        entity = match list_params.ingredient_id {
-            Some(value) => entity.filter(Column::IngredientId.eq(value)),
-            None => entity,
-        };
+        let mut entity = Entity::find();
+        if let Some(value) = list_params.user_id {
+            entity = entity.filter(Column::UserId.eq(value));
+        }
+        if let Some(value) = list_params.ingredient_id {
+            entity = entity.filter(Column::IngredientId.eq(value));
+        }
         if let Some(value) = list_params.name_contains {
             entity = entity.filter(
                 Expr::expr(Func::lower(Expr::col(
@@ -98,7 +97,7 @@ impl DatabaseCRUD for DBClient {
                 )))
                 .like(format!("%{}%", value.to_lowercase())),
             );
-        };
+        }
         Ok(PantryItemsListDto {
             items: match list_params.max_expiration_date {
                 Some(value) => entity.filter(Column::ExpirationDate.lte(value)),
@@ -121,7 +120,6 @@ impl DatabaseCRUD for DBClient {
         id: Uuid,
         request: UpdateDto,
     ) -> Result<PantryItemDto, UpdateError> {
-        println!("in 0");
         let pantry_item: Model = Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
@@ -130,7 +128,6 @@ impl DatabaseCRUD for DBClient {
                 error: err.into(),
             })?
             .ok_or(UpdateError::NotFound { id })?;
-        println!("in");
         let mut pantry_item: ActiveModel = pantry_item.into();
         pantry_item.ingredient_id = Set(request.ingredient_id);
         pantry_item.user_id = Set(request.user_id);
