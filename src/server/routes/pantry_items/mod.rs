@@ -69,25 +69,10 @@ impl PantryItemRouter {
     ) -> Result<(StatusCode, Json<PantryItemListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
-                let name_pattern = query_params.name_contains.clone();
-                let mut pantry_items = state
+                let pantry_items = state
                     .db_client
-                    .list_pantry_items(query_params.into_dto(user_id))
-                    .await?; // TODO: make this an sql query
-                if let Some(pattern) = name_pattern {
-                    let mut filtered_items = Vec::new();
-                    for item in pantry_items.items {
-                        let ingredient_name = state
-                            .db_client
-                            .get_ingredient(item.ingredient_id)
-                            .await?
-                            .name;
-                        if ingredient_name.to_lowercase().contains(&pattern) {
-                            filtered_items.push(item);
-                        }
-                    }
-                    pantry_items.items = filtered_items;
-                }
+                    .list_pantry_items_join(query_params.into_dto(user_id))
+                    .await?;
                 log::info!("{:?} pantry items collected", pantry_items.items.len());
                 return Ok((StatusCode::OK, Json(pantry_items.into())));
             }
@@ -158,7 +143,11 @@ impl PantryItemRouter {
     }
 }
 
-async fn verify_user(state: &AppState, pantry_item_id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
+async fn verify_user(
+    state: &AppState,
+    pantry_item_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), VerifyError> {
     if state.user_is_admin(user_id).await? {
         return Ok(());
     }

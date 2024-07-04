@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::database::pantry_items::dto::{
-    CreateDto, ListParamsDto, PantryItemDto, PantryItemsListDto, UpdateDto,
+    CreateDto, ListParamsDto, PantryItemDto, PantryItemJoinDto, PantryItemsListDto, UpdateDto,
 };
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -64,7 +64,6 @@ impl UpdatePayload {
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
-    pub with_name: Option<bool>, // TODO: always return ingredient_name
     pub name_contains: Option<String>,
     pub max_expiration_date: Option<NaiveDate>,
     pub ingredient_id: Option<Uuid>,
@@ -76,6 +75,7 @@ impl ListQueryParams {
             max_expiration_date: self.max_expiration_date,
             user_id: Some(user_id),
             ingredient_id: self.ingredient_id,
+            name_contains: self.name_contains,
         }
     }
 }
@@ -84,6 +84,7 @@ impl ListQueryParams {
 pub struct PantryItemResponse {
     pub id: Uuid,
     pub ingredient_id: Uuid,
+    pub ingredient_name: Option<String>,
     pub user_id: Uuid,
     pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<String>,
@@ -101,6 +102,27 @@ impl From<PantryItemDto> for PantryItemResponse {
         PantryItemResponse {
             id: val.id,
             ingredient_id: val.ingredient_id,
+            ingredient_name: None,
+            user_id: val.user_id,
+            purchase_date: val.purchase_date,
+            expiration_date: val.expiration_date.map(|date| date.to_string()),
+            quantity: val.quantity,
+            weight_grams: val.weight_grams,
+            volume_milli_litres: val.volume_milli_litres,
+            essential: val.essential,
+            running_low: val.running_low,
+            created_at: val.created_at,
+            updated_at: val.created_at,
+        }
+    }
+}
+
+impl From<PantryItemJoinDto> for PantryItemResponse {
+    fn from(val: PantryItemJoinDto) -> Self {
+        PantryItemResponse {
+            id: val.id,
+            ingredient_id: val.ingredient_id,
+            ingredient_name: Some(val.ingredient_name),
             user_id: val.user_id,
             purchase_date: val.purchase_date,
             expiration_date: val.expiration_date.map(|date| date.to_string()),
