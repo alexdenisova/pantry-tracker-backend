@@ -59,7 +59,7 @@ impl RedisClient {
         self.connection.set(key, value)?;
         if let Some(days) = ttl_days {
             self.connection
-                .expire(key, i64::from(days) * 24 * 60 * 60)?; // TODO: make this a cmd arg
+                .expire(key, i64::from(days) * 24 * 60 * 60)?;
         }
         Ok(())
     }
