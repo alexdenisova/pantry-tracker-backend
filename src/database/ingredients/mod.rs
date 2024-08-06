@@ -1,6 +1,7 @@
 pub mod dto;
 
 use async_trait::async_trait;
+use migrations::extension::postgres::PgExpr;
 use sea_orm::{ActiveModelTrait, DbErr, EntityTrait, QueryFilter, QueryOrder};
 use uuid::Uuid;
 
@@ -62,7 +63,13 @@ impl DatabaseCRUD for DBClient {
                     Expr::expr(Func::lower(Expr::col(Column::Name)))
                         .eq(value.to_lowercase().to_string()),
                 ),
-                None => Entity::find(),
+                None => match list_params.name_contains {
+                    Some(value) => Entity::find().filter(
+                        Expr::expr(Func::lower(Expr::col(Column::Name)))
+                            .contains(value.to_lowercase().to_string()),
+                    ),
+                    None => Entity::find(),
+                },
             }
             .order_by_asc(Column::Name)
             .all(&self.database_connection)

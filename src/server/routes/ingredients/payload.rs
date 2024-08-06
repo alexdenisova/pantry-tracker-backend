@@ -22,12 +22,16 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
-    pub name: Option<String>,
+    pub name: Option<String>, // TODO: add name_contains for filter
+    pub name_contains: Option<String>,
 }
 
 impl From<ListQueryParams> for ListParamsDto {
     fn from(val: ListQueryParams) -> Self {
-        ListParamsDto { name: val.name }
+        ListParamsDto {
+            name: val.name,
+            name_contains: val.name_contains,
+        }
     }
 }
 

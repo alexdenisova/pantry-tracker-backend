@@ -12,6 +12,7 @@ pub struct CreateDto {
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
     pub name: Option<String>,
+    pub name_contains: Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]

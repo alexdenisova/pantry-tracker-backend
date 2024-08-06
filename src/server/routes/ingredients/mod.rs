@@ -8,6 +8,7 @@ use axum::{
     Router,
 };
 use axum_extra::extract::CookieJar;
+use color_eyre::eyre::eyre;
 use uuid::Uuid;
 
 use crate::server::routes::errors::AppError;
@@ -50,6 +51,11 @@ impl IngredientRouter {
         jar: CookieJar,
         Query(query_params): Query<ListQueryParams>,
     ) -> Result<(StatusCode, Json<IngredientListResponse>), AppError> {
+        if query_params.name.is_some() && query_params.name_contains.is_some() {
+            return Err(AppError::UnprocessableEntity {
+                error: eyre!("Only one of name or name_contains can be defined."),
+            });
+        }
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if state.session_is_valid(session_id.value_trimmed()).await? {
                 let ingredients = state
