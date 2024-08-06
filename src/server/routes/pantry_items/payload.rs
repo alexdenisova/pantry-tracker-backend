@@ -99,7 +99,6 @@ impl From<PantryItemDto> for PantryItemResponse {
             ingredient_id: val.ingredient_id,
             ingredient_name: None,
             user_id: val.user_id,
-            purchase_date: val.purchase_date,
             expiration_date: val.expiration_date.map(|date| date.to_string()),
             quantity: val.quantity,
             weight_grams: val.weight_grams,
