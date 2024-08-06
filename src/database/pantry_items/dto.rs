@@ -9,7 +9,6 @@ use db_entities::pantry_items::Model;
 pub struct CreateDto {
     pub ingredient_id: Uuid,
     pub user_id: Uuid,
-    pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<NaiveDate>,
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
@@ -22,7 +21,6 @@ pub struct CreateDto {
 pub struct UpdateDto {
     pub ingredient_id: Uuid,
     pub user_id: Uuid,
-    pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<NaiveDate>,
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
@@ -43,7 +41,6 @@ pub struct ListParamsDto {
 pub struct PantryItemDto {
     pub id: Uuid,
     pub ingredient_id: Uuid,
-    pub purchase_date: Option<NaiveDate>,
     pub expiration_date: Option<NaiveDate>,
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
@@ -62,7 +59,6 @@ impl From<CreateDto> for Model {
         Self {
             id: Uuid::new_v4(),
             ingredient_id: value.ingredient_id,
-            purchase_date: value.purchase_date,
             expiration_date: value.expiration_date,
             quantity: value.quantity,
             weight_grams: value.weight_grams,
@@ -81,7 +77,6 @@ impl From<Model> for PantryItemDto {
         Self {
             id: value.id,
             ingredient_id: value.ingredient_id,
-            purchase_date: value.purchase_date,
             expiration_date: value.expiration_date,
             quantity: value.quantity,
             weight_grams: value.weight_grams,
