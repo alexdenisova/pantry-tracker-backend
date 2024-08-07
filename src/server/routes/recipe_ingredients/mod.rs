@@ -42,7 +42,7 @@ impl RecipeIngredientRouter {
     ) -> Result<(StatusCode, Json<RecipeIngredientResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
-                verify_user(&state, payload.recipe_id, user_id).await?;
+                verify_recipe_user(&state, payload.recipe_id, user_id).await?;
                 let recipe_ingredient = state
                     .db_client
                     .create_recipe_ingredient(payload.into())
@@ -73,15 +73,28 @@ impl RecipeIngredientRouter {
                         });
                     }
                 }
-                let recipe_ingredients = state
+                let list_params = query_params.into();
+                let recipe_ingredients: Vec<RecipeIngredientResponse> = state
                     .db_client
-                    .list_recipe_ingredients(query_params.into())
-                    .await?;
+                    .list_recipe_ingredients(&list_params)
+                    .await?
+                    .into();
                 log::info!(
                     "{:?} recipe ingredients collected",
-                    recipe_ingredients.items.len()
+                    recipe_ingredients.len()
                 );
-                return Ok((StatusCode::OK, Json(recipe_ingredients.into())));
+                let metadata = state
+                    .db_client
+                    .get_recipe_ingredients_metadata(&list_params)
+                    .await?
+                    .into();
+                return Ok((
+                    StatusCode::OK,
+                    Json(RecipeIngredientListResponse::from(
+                        recipe_ingredients,
+                        metadata,
+                    )),
+                ));
             }
         }
         Err(AppError::Unauthorized)

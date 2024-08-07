@@ -35,7 +35,7 @@ impl LoginRouter {
     ) -> Result<(CookieJar, Redirect), AppError> {
         let username = payload.username.clone();
         let password = payload.password.clone().unwrap_or_default();
-        let users = state.db_client.list_users(payload.into()).await?;
+        let users = state.db_client.list_users(&payload.into()).await?;
         if users.items.is_empty() {
             return Err(AppError::NotFound { id: username });
         }

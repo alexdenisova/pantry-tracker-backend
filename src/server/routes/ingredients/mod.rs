@@ -58,12 +58,19 @@ impl IngredientRouter {
         }
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if state.session_is_valid(session_id.value_trimmed()).await? {
-                let ingredients = state
+                let list_params = query_params.into();
+                let ingredients: Vec<IngredientResponse> =
+                    state.db_client.list_ingredients(&list_params).await?.into();
+                log::info!("{:?} ingredients collected", ingredients.len());
+                let metadata = state
                     .db_client
-                    .list_ingredients(query_params.into())
-                    .await?;
-                log::info!("{:?} ingredients collected", ingredients.items.len());
-                return Ok((StatusCode::OK, Json(ingredients.into())));
+                    .get_ingredients_metadata(&list_params)
+                    .await?
+                    .into();
+                return Ok((
+                    StatusCode::OK,
+                    Json(IngredientListResponse::from(ingredients, metadata)),
+                ));
             }
         }
         Err(AppError::Unauthorized)

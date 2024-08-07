@@ -130,8 +130,8 @@ impl From<GetRecipeJsonError> for AppError {
 pub enum VerifyError {
     #[error("Incorrect username or password")]
     Unauthorized,
-    #[error("User {user_id} not found")]
-    NotFound { user_id: Uuid },
+    #[error("Item with id {id} not found")]
+    NotFound { id: Uuid },
     #[error("{error}")]
     Other { error: AnyError },
 }
@@ -141,7 +141,7 @@ impl From<VerifyError> for AppError {
         log::error!("{}", val);
         match val {
             VerifyError::Unauthorized => AppError::Unauthorized,
-            VerifyError::NotFound { user_id } => AppError::NotFound {
+            VerifyError::NotFound { id: user_id } => AppError::NotFound {
                 id: user_id.to_string(),
             },
             VerifyError::Other { error } => AppError::Other { error },
@@ -153,7 +153,7 @@ impl From<GetError> for VerifyError {
     fn from(val: GetError) -> Self {
         log::error!("{}", val);
         if let GetError::NotFound { id } = val {
-            return VerifyError::NotFound { user_id: id };
+            return VerifyError::NotFound { id };
         }
         VerifyError::Other { error: val.into() }
     }

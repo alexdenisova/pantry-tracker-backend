@@ -1,3 +1,4 @@
+pub mod dto;
 pub mod errors;
 pub mod ingredients;
 pub mod pantry_items;

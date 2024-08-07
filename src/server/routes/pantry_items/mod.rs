@@ -69,12 +69,22 @@ impl PantryItemRouter {
     ) -> Result<(StatusCode, Json<PantryItemListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
-                let pantry_items = state
+                let list_params = query_params.into_dto(user_id);
+                let pantry_items: Vec<PantryItemResponse> = state
                     .db_client
-                    .list_pantry_items_join(query_params.into_dto(user_id))
-                    .await?;
-                log::info!("{:?} pantry items collected", pantry_items.items.len());
-                return Ok((StatusCode::OK, Json(pantry_items.into())));
+                    .list_pantry_items_join(&list_params)
+                    .await?
+                    .into();
+                log::info!("{:?} pantry items collected", pantry_items.len());
+                let metadata = state
+                    .db_client
+                    .get_pantry_items_join_metadata(&list_params)
+                    .await?
+                    .into();
+                return Ok((
+                    StatusCode::OK,
+                    Json(PantryItemListResponse::from(pantry_items, metadata)),
+                ));
             }
         }
         Err(AppError::Unauthorized)

@@ -3,11 +3,13 @@ pub mod dto;
 use async_trait::async_trait;
 use chrono::Utc;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder,
+    ActiveModelTrait, ActiveValue, ColumnTrait, DbErr, EntityTrait, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, Select,
 };
 use uuid::Uuid;
 
 use self::dto::{CreateDto, UpdateDto, UserDto, UsersListDto};
+use crate::database::dto::MetadataDto;
 use crate::database::users::dto::ListParamsDto;
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
@@ -19,7 +21,11 @@ use db_entities::users::{ActiveModel, Column, Entity, Model};
 pub trait DatabaseCRUD {
     async fn create_user(&self, request: CreateDto) -> Result<UserDto, CreateError>;
     async fn get_user(&self, id: Uuid) -> Result<UserDto, GetError>;
-    async fn list_users(&self, list_params: ListParamsDto) -> Result<UsersListDto, ListError>;
+    async fn list_users(&self, list_params: &ListParamsDto) -> Result<UsersListDto, ListError>;
+    async fn get_users_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError>;
     async fn update_user(&self, id: Uuid, request: UpdateDto) -> Result<UserDto, UpdateError>;
     async fn delete_user(&self, id: Uuid) -> Result<(), DeleteError>;
 }
@@ -53,19 +59,33 @@ impl DatabaseCRUD for DBClient {
             .ok_or(GetError::NotFound { id })?
             .into())
     }
-    async fn list_users(&self, list_params: ListParamsDto) -> Result<UsersListDto, ListError> {
+    async fn list_users(&self, list_params: &ListParamsDto) -> Result<UsersListDto, ListError> {
         Ok(UsersListDto {
-            items: match list_params.name {
-                Some(value) => Entity::find().filter(Column::Name.eq(value)),
-                None => Entity::find(),
-            }
-            .order_by_asc(Column::Name)
-            .all(&self.database_connection)
+            items: list_entity(list_params)
+                .limit(list_params.limit)
+                .offset(list_params.offset)
+                .order_by_asc(Column::Name)
+                .all(&self.database_connection)
+                .await
+                .map_err(|err| ListError::Unexpected { error: err.into() })?
+                .into_iter()
+                .map(Into::into)
+                .collect(),
+        })
+    }
+    async fn get_users_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError> {
+        let total_count = list_entity(list_params)
+            .count(&self.database_connection)
             .await
-            .map_err(|err| ListError::Unexpected { error: err.into() })?
-            .into_iter()
-            .map(Into::into)
-            .collect(),
+            .map_err(|err| ListError::Unexpected { error: err.into() })?;
+        Ok(MetadataDto {
+            page: list_params.offset / list_params.limit + 1,
+            per_page: list_params.limit,
+            page_count: total_count / list_params.limit + 1,
+            total_count,
         })
     }
     async fn update_user(&self, id: Uuid, request: UpdateDto) -> Result<UserDto, UpdateError> {
@@ -108,5 +128,12 @@ impl DatabaseCRUD for DBClient {
         } else {
             Ok(())
         }
+    }
+}
+
+fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
+    match &list_params.name {
+        Some(value) => Entity::find().filter(Column::Name.eq(value)),
+        None => Entity::find(),
     }
 }

@@ -57,17 +57,17 @@ impl RecipeRouter {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
                 let ingredient_ids = query_params.ingredient_ids.clone();
-                let recipes = if let Some(ingredient_ids) = ingredient_ids {
-                    RecipeListResponse {
-                        items: list_recipes_containing_ingredients(state, ingredient_ids, user_id)
-                            .await?,
-                    }
+                let recipes = if ingredient_ids.is_some() {
+                    list_recipes_containing_ingredients(state, user_id, query_params).await?
                 } else {
-                    state
+                    let list_params = query_params.into_dto(user_id);
+                    let recipes = state.db_client.list_recipes(&list_params).await?.into();
+                    let metadata = state
                         .db_client
-                        .list_recipes(query_params.into_dto(Some(user_id)))
+                        .get_recipes_metadata(&list_params)
                         .await?
-                        .into()
+                        .into();
+                    RecipeListResponse::from(recipes, metadata)
                 };
                 log::info!("{:?} recipes collected", recipes.items.len());
                 return Ok((StatusCode::OK, Json(recipes)));
@@ -141,24 +141,26 @@ async fn verify_user(state: &AppState, recipe_id: Uuid, user_id: Uuid) -> Result
 
 async fn list_recipes_containing_ingredients(
     state: AppState,
-    ingredient_ids: String,
     user_id: Uuid,
-) -> Result<Vec<RecipeResponse>, ListError> {
-    if let Ok(ingredient_ids) = decode(&ingredient_ids) {
+    query_params: ListQueryParams,
+) -> Result<RecipeListResponse, ListError> {
+    if let Ok(ingredient_ids) = decode(&query_params.ingredient_ids.clone().unwrap()) {
         if let Ok(ingredient_ids) = serde_json::from_str::<Vec<Uuid>>(&ingredient_ids) {
+            let list_params = query_params.into_join_dto(user_id, ingredient_ids);
             let recipes: Vec<RecipeResponse> = state
                 .db_client
-                .list_recipes_join(crate::database::recipes::dto::ListRecipeJoinParamsDto {
-                    user_id,
-                    ingredient_ids,
-                })
+                .list_recipes_join(&list_params)
                 .await?
                 .into_iter()
                 .map(Into::into)
                 .collect();
 
-            log::info!("{:?} recipes collected", recipes.len());
-            return Ok(recipes);
+            let metadata = state
+                .db_client
+                .get_recipes_join_metadata(&list_params)
+                .await?
+                .into();
+            return Ok(RecipeListResponse::from(recipes, metadata));
         }
     }
     Err(ListError::Unprocessable {

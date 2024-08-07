@@ -35,6 +35,8 @@ pub struct ListParamsDto {
     pub ingredient_id: Option<Uuid>,
     pub name_contains: Option<String>,
     pub max_expiration_date: Option<NaiveDate>,
+    pub limit: u64,
+    pub offset: u64,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]

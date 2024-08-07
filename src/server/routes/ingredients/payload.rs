@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::database::ingredients::dto::{
     CreateDto, IngredientDto, IngredientsListDto, ListParamsDto,
 };
+use crate::server::payload::{MetadataResponse, DEFAULT_PER_PAGE};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
@@ -22,8 +23,10 @@ impl From<CreatePayload> for CreateDto {
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
-    pub name: Option<String>, // TODO: add name_contains for filter
+    pub name: Option<String>,
     pub name_contains: Option<String>,
+    pub page: Option<u64>,
+    pub per_page: Option<u64>,
 }
 
 impl From<ListQueryParams> for ListParamsDto {
@@ -31,6 +34,8 @@ impl From<ListQueryParams> for ListParamsDto {
         ListParamsDto {
             name: val.name,
             name_contains: val.name_contains,
+            limit: val.per_page.unwrap_or(DEFAULT_PER_PAGE),
+            offset: val.per_page.unwrap_or(DEFAULT_PER_PAGE) * (val.page.unwrap_or(1) - 1),
         }
     }
 }
@@ -54,13 +59,19 @@ impl From<IngredientDto> for IngredientResponse {
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub struct IngredientListResponse {
+    #[serde(rename = "_metadata")]
+    pub metadata: MetadataResponse,
     pub items: Vec<IngredientResponse>,
 }
 
-impl From<IngredientsListDto> for IngredientListResponse {
+impl From<IngredientsListDto> for Vec<IngredientResponse> {
     fn from(val: IngredientsListDto) -> Self {
-        IngredientListResponse {
-            items: val.items.into_iter().map(Into::into).collect(),
-        }
+        val.items.into_iter().map(Into::into).collect()
+    }
+}
+
+impl IngredientListResponse {
+    pub fn from(items: Vec<IngredientResponse>, metadata: MetadataResponse) -> Self {
+        IngredientListResponse { metadata, items }
     }
 }

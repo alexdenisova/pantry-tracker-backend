@@ -13,6 +13,8 @@ pub struct CreateDto {
 pub struct ListParamsDto {
     pub name: Option<String>,
     pub name_contains: Option<String>,
+    pub limit: u64,
+    pub offset: u64,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]

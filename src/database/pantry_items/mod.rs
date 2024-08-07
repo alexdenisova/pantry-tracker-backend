@@ -4,12 +4,13 @@ use async_trait::async_trait;
 use chrono::Utc;
 use migrations::{Expr, Func};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, JoinType, QueryFilter, QueryOrder,
-    QuerySelect, RelationTrait, Set,
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, JoinType, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, RelationTrait, Select, Set,
 };
 use uuid::Uuid;
 
 use self::dto::{CreateDto, ListParamsDto, PantryItemDto, PantryItemsListDto, UpdateDto};
+use crate::database::dto::MetadataDto;
 use crate::database::pantry_items::dto::PantryItemJoinDto;
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
@@ -24,8 +25,12 @@ pub trait DatabaseCRUD {
     async fn get_pantry_item_join(&self, id: Uuid) -> Result<PantryItemJoinDto, GetError>;
     async fn list_pantry_items_join(
         &self,
-        list_params: ListParamsDto,
+        list_params: &ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError>;
+    async fn get_pantry_items_join_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError>;
     async fn update_pantry_item(
         &self,
         id: Uuid,
@@ -81,38 +86,32 @@ impl DatabaseCRUD for DBClient {
     }
     async fn list_pantry_items_join(
         &self,
-        list_params: ListParamsDto,
+        list_params: &ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError> {
-        let mut entity = Entity::find();
-        if let Some(value) = list_params.user_id {
-            entity = entity.filter(Column::UserId.eq(value));
-        }
-        if let Some(value) = list_params.ingredient_id {
-            entity = entity.filter(Column::IngredientId.eq(value));
-        }
-        if let Some(value) = list_params.name_contains {
-            entity = entity.filter(
-                Expr::expr(Func::lower(Expr::col(
-                    db_entities::ingredients::Column::Name,
-                )))
-                .like(format!("%{}%", value.to_lowercase())),
-            );
-        }
         Ok(PantryItemsListDto {
-            items: match list_params.max_expiration_date {
-                Some(value) => entity.filter(Column::ExpirationDate.lte(value)),
-                None => entity,
-            }
-            .join(
-                JoinType::InnerJoin,
-                db_entities::pantry_items::Relation::Ingredients.def(),
-            )
-            .column_as(db_entities::ingredients::Column::Name, "ingredient_name")
-            .order_by_desc(Column::UpdatedAt)
-            .into_model::<PantryItemJoinDto>()
-            .all(&self.database_connection)
+            items: list_entity(list_params)
+                .limit(list_params.limit)
+                .offset(list_params.offset)
+                .order_by_desc(Column::UpdatedAt)
+                .into_model::<PantryItemJoinDto>()
+                .all(&self.database_connection)
+                .await
+                .map_err(|err| ListError::Unexpected { error: err.into() })?,
+        })
+    }
+    async fn get_pantry_items_join_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError> {
+        let total_count = list_entity(list_params)
+            .count(&self.database_connection)
             .await
-            .map_err(|err| ListError::Unexpected { error: err.into() })?,
+            .map_err(|err| ListError::Unexpected { error: err.into() })?;
+        Ok(MetadataDto {
+            page: list_params.offset / list_params.limit + 1,
+            per_page: list_params.limit,
+            page_count: total_count / list_params.limit + 1,
+            total_count,
         })
     }
     async fn update_pantry_item(
@@ -171,4 +170,31 @@ impl DatabaseCRUD for DBClient {
             Ok(())
         }
     }
+}
+
+fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
+    let mut entity = Entity::find();
+    if let Some(value) = list_params.user_id {
+        entity = entity.filter(Column::UserId.eq(value));
+    }
+    if let Some(value) = list_params.ingredient_id {
+        entity = entity.filter(Column::IngredientId.eq(value));
+    }
+    if let Some(value) = &list_params.name_contains {
+        entity = entity.filter(
+            Expr::expr(Func::lower(Expr::col(
+                db_entities::ingredients::Column::Name,
+            )))
+            .like(format!("%{}%", value.to_lowercase())),
+        );
+    }
+    if let Some(value) = list_params.max_expiration_date {
+        entity = entity.filter(Column::ExpirationDate.lte(value));
+    }
+    entity
+        .join(
+            JoinType::InnerJoin,
+            db_entities::pantry_items::Relation::Ingredients.def(),
+        )
+        .column_as(db_entities::ingredients::Column::Name, "ingredient_name")
 }
