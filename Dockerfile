@@ -2,6 +2,8 @@ ARG VERSION="3.16"
 
 FROM alpine:${VERSION} AS final
 
+LABEL org.opencontainers.image.source = "https://github.com/alexdenisova/pantry-tracker-backend"
+
 RUN \
     apk --no-cache add curl jq \
     && rm -rf /var/cache/apk/* /tmp/*
