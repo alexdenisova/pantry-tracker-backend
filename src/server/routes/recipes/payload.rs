@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use titlecase::titlecase;
 use url::Url;
@@ -11,10 +11,14 @@ use crate::database::recipes::dto::{
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
     pub name: String,
-    pub cooking_time_mins: Option<i32>,
+    pub prep_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub link: Option<Url>,
     pub instructions: Option<String>,
     pub image: Option<Url>,
+    pub last_cooked: Option<NaiveDate>,
+    pub rating: Option<u8>,
+    pub notes: Option<String>,
     // pub calories
 }
 
@@ -23,10 +27,14 @@ impl CreatePayload {
         CreateDto {
             user_id,
             name: titlecase(&self.name),
-            cooking_time_mins: self.cooking_time_mins,
+            prep_time_mins: self.prep_time_mins,
+            total_time_mins: self.total_time_mins,
             link: self.link.map(|url| url.to_string()),
             instructions: self.instructions,
             image: self.image.map(|url| url.to_string()),
+            last_cooked: self.last_cooked,
+            rating: self.rating.map(std::convert::Into::into),
+            notes: self.notes,
         }
     }
 }
@@ -34,10 +42,14 @@ impl CreatePayload {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct UpdatePayload {
     pub name: String,
-    pub cooking_time_mins: Option<i32>,
-    pub link: Option<Url>,
+    pub prep_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
+    pub link: Option<String>,
     pub instructions: Option<String>,
-    pub image: Option<Url>,
+    pub image: Option<String>,
+    pub last_cooked: Option<NaiveDate>,
+    pub rating: Option<u8>,
+    pub notes: Option<String>,
 }
 
 impl UpdatePayload {
@@ -45,10 +57,14 @@ impl UpdatePayload {
         UpdateDto {
             user_id,
             name: self.name,
-            cooking_time_mins: self.cooking_time_mins,
+            prep_time_mins: self.prep_time_mins,
+            total_time_mins: self.total_time_mins,
             link: self.link.map(|url| url.to_string()),
             instructions: self.instructions,
             image: self.image.map(|url| url.to_string()),
+            last_cooked: self.last_cooked,
+            rating: self.rating.map(std::convert::Into::into),
+            notes: self.notes,
         }
     }
 }
@@ -56,7 +72,7 @@ impl UpdatePayload {
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
     pub name_contains: Option<String>,
-    pub cooking_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub ingredient_ids: Option<String>, // urlencoded array of ingredient_ids
 }
 
@@ -64,7 +80,7 @@ impl ListQueryParams {
     pub fn into_dto(self, user_id: Option<Uuid>) -> ListParamsDto {
         ListParamsDto {
             name_contains: self.name_contains,
-            cooking_time_mins: self.cooking_time_mins,
+            total_time_mins: self.total_time_mins,
             user_id,
         }
     }
@@ -74,10 +90,14 @@ impl ListQueryParams {
 pub struct RecipeResponse {
     pub id: Uuid,
     pub name: String,
-    pub cooking_time_mins: Option<i32>,
+    pub prep_time_mins: Option<i32>,
+    pub total_time_mins: Option<i32>,
     pub link: Option<String>,
     pub instructions: Option<String>,
     pub image: Option<String>,
+    pub last_cooked: Option<NaiveDate>,
+    pub rating: Option<i32>,
+    pub notes: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -87,10 +107,14 @@ impl From<RecipeDto> for RecipeResponse {
         RecipeResponse {
             id: val.id,
             name: val.name,
-            cooking_time_mins: val.cooking_time_mins,
+            prep_time_mins: val.prep_time_mins,
+            total_time_mins: val.total_time_mins,
             link: val.link,
             instructions: val.instructions,
             image: val.image,
+            last_cooked: val.last_cooked,
+            rating: val.rating,
+            notes: val.notes,
             created_at: val.created_at,
             updated_at: val.created_at,
         }

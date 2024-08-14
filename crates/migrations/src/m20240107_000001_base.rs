@@ -142,11 +142,14 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Recipes::Id).uuid().primary_key())
                     .col(ColumnDef::new(Recipes::UserId).uuid().not_null())
                     .col(ColumnDef::new(Recipes::Name).string().not_null())
-                    .col(ColumnDef::new(Recipes::CookingTimeMins).integer())
-                    // .col(ColumnDef::new(Recipes::CookingTime).interval(None, None))
+                    .col(ColumnDef::new(Recipes::PrepTimeMins).integer())
+                    .col(ColumnDef::new(Recipes::TotalTimeMins).integer())
                     .col(ColumnDef::new(Recipes::Link).string())
                     .col(ColumnDef::new(Recipes::Instructions).text())
                     .col(ColumnDef::new(Recipes::Image).string())
+                    .col(ColumnDef::new(Recipes::LastCooked).date())
+                    .col(ColumnDef::new(Recipes::Rating).integer())
+                    .col(ColumnDef::new(Recipes::Notes).string())
                     .col(
                         ColumnDef::new(Recipes::CreatedAt)
                             .timestamp()
@@ -328,10 +331,14 @@ pub enum Recipes {
     Id,
     UserId,
     Name,
-    CookingTimeMins,
+    PrepTimeMins,
+    TotalTimeMins,
     Link,
     Instructions, //TODO: Equipment, Tags (Breakfast, Lunch, Soup, Baking..)
     Image,
+    LastCooked,
+    Rating,
+    Notes,
     CreatedAt,
     UpdatedAt,
 }
