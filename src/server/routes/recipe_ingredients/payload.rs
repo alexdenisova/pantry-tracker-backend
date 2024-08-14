@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::database::recipe_ingredients::dto::{
     CreateDto, ListParamsDto, RecipeIngredientDto, RecipeIngredientsListDto, UpdateDto,
 };
+use crate::server::payload::{MetadataResponse, DEFAULT_PER_PAGE};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
@@ -50,13 +51,16 @@ impl From<UpdatePayload> for UpdateDto {
 pub struct ListQueryParams {
     pub recipe_id: Option<Uuid>,
     pub ingredient_id: Option<Uuid>,
+    pub page: Option<u64>,
+    pub per_page: Option<u64>,
 }
 
 impl From<ListQueryParams> for ListParamsDto {
     fn from(val: ListQueryParams) -> Self {
         ListParamsDto {
             recipe_id: val.recipe_id,
-            ingredient_id: val.ingredient_id,
+            limit: val.per_page.unwrap_or(DEFAULT_PER_PAGE),
+            offset: val.per_page.unwrap_or(DEFAULT_PER_PAGE) * (val.page.unwrap_or(1) - 1),
         }
     }
 }
@@ -66,6 +70,7 @@ pub struct RecipeIngredientResponse {
     pub id: Uuid,
     pub recipe_id: Uuid,
     pub ingredient_id: Uuid,
+    // pub ingredient_name: String,
     pub amount: Option<String>,
     pub unit: Option<String>,
     pub optional: bool,
@@ -90,13 +95,19 @@ impl From<RecipeIngredientDto> for RecipeIngredientResponse {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct RecipeIngredientListResponse {
+    #[serde(rename = "_metadata")]
+    pub metadata: MetadataResponse,
     pub items: Vec<RecipeIngredientResponse>,
 }
 
-impl From<RecipeIngredientsListDto> for RecipeIngredientListResponse {
+impl From<RecipeIngredientsListDto> for Vec<RecipeIngredientResponse> {
     fn from(val: RecipeIngredientsListDto) -> Self {
-        RecipeIngredientListResponse {
-            items: val.items.into_iter().map(Into::into).collect(),
-        }
+        val.items.into_iter().map(Into::into).collect()
+    }
+}
+
+impl RecipeIngredientListResponse {
+    pub fn from(items: Vec<RecipeIngredientResponse>, metadata: MetadataResponse) -> Self {
+        RecipeIngredientListResponse { metadata, items }
     }
 }

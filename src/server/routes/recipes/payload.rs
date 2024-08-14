@@ -5,8 +5,9 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::database::recipes::dto::{
-    CreateDto, ListParamsDto, RecipeDto, RecipesListDto, UpdateDto,
+    CreateDto, ListParamsDto, ListRecipeJoinParamsDto, RecipeDto, RecipesListDto, UpdateDto
 };
+use crate::server::payload::{MetadataResponse, DEFAULT_PER_PAGE};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
@@ -74,14 +75,26 @@ pub struct ListQueryParams {
     pub name_contains: Option<String>,
     pub total_time_mins: Option<i32>,
     pub ingredient_ids: Option<String>, // urlencoded array of ingredient_ids
+    pub page: Option<u64>,
+    pub per_page: Option<u64>,
 }
 
 impl ListQueryParams {
-    pub fn into_dto(self, user_id: Option<Uuid>) -> ListParamsDto {
+    pub fn into_dto(self, user_id: Uuid) -> ListParamsDto {
         ListParamsDto {
             name_contains: self.name_contains,
             total_time_mins: self.total_time_mins,
+            user_id: Some(user_id),
+            limit: self.per_page.unwrap_or(DEFAULT_PER_PAGE),
+            offset: self.per_page.unwrap_or(DEFAULT_PER_PAGE) * (self.page.unwrap_or(1) - 1),
+        }
+    }
+    pub fn into_join_dto(self, user_id: Uuid, ingredient_ids: Vec<Uuid>) -> ListRecipeJoinParamsDto {
+        ListRecipeJoinParamsDto {
             user_id,
+            ingredient_ids,
+            limit: self.per_page.unwrap_or(DEFAULT_PER_PAGE),
+            offset: self.per_page.unwrap_or(DEFAULT_PER_PAGE) * (self.page.unwrap_or(1) - 1),
         }
     }
 }
@@ -116,20 +129,26 @@ impl From<RecipeDto> for RecipeResponse {
             rating: val.rating,
             notes: val.notes,
             created_at: val.created_at,
-            updated_at: val.created_at,
+            updated_at: val.updated_at,
         }
     }
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 pub struct RecipeListResponse {
+    #[serde(rename = "_metadata")]
+    pub metadata: MetadataResponse,
     pub items: Vec<RecipeResponse>,
 }
 
-impl From<RecipesListDto> for RecipeListResponse {
+impl From<RecipesListDto> for Vec<RecipeResponse> {
     fn from(val: RecipesListDto) -> Self {
-        RecipeListResponse {
-            items: val.items.into_iter().map(Into::into).collect(),
-        }
+        val.items.into_iter().map(Into::into).collect()
+    }
+}
+
+impl RecipeListResponse {
+    pub fn from(items: Vec<RecipeResponse>, metadata: MetadataResponse) -> Self {
+        RecipeListResponse { metadata, items }
     }
 }

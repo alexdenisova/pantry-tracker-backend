@@ -14,6 +14,8 @@ pub enum CreateError {
 pub enum ListError {
     #[error("Unexpected error during list collection: {error}")]
     Unexpected { error: AnyError },
+    #[error("Could not parse list parameter: {error}")]
+    Unprocessable { error: AnyError },
 }
 
 #[derive(Error, Debug)]
@@ -54,3 +56,12 @@ impl From<GetError> for UpdateError {
         }
     }
 }
+
+// impl From<GetError> for ListError {
+//     fn from(value: GetError) -> Self {
+//         match value {
+//             GetError::NotFound { id } => UpdateError::NotFound { id },
+//             GetError::Unexpected { id, error } => UpdateError::Unexpected { id, error },
+//         }
+//     }
+// }

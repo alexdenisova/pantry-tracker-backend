@@ -1,10 +1,9 @@
-pub mod ingredient_names;
+mod errors;
 pub mod ingredients;
 pub mod login;
 pub mod pantry_items;
 pub mod parse_ingredients;
 pub mod parse_recipe_link;
-pub mod possible_recipes;
 pub mod recipe_ingredients;
 pub mod recipes;
 pub mod users;

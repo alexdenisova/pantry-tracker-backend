@@ -8,134 +8,103 @@ use axum::{
     Router,
 };
 use axum_extra::extract::CookieJar;
+use color_eyre::eyre::eyre;
 use uuid::Uuid;
 
-use crate::database::errors::{CreateError, DeleteError, GetError};
+use crate::server::routes::errors::AppError;
 use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
-use payload::{
-    CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams,
-};
+use payload::{CreatePayload, IngredientListResponse, IngredientResponse, ListQueryParams};
 
 pub struct IngredientRouter {}
 
 impl IngredientRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new()
             .route(
                 "/",
-                get(IngredientRouter::list_ingredients).post(IngredientRouter::create_ingredient),
+                get(IngredientRouter::list).post(IngredientRouter::create),
             )
             .route(
                 "/:id",
-                get(IngredientRouter::get_ingredient)
-                    .delete(IngredientRouter::delete_ingredient),
+                get(IngredientRouter::get).delete(IngredientRouter::delete),
             )
     }
 
-    async fn create_ingredient(
+    async fn create(
         State(state): State<AppState>,
         jar: CookieJar,
         Json(payload): Json<CreatePayload>,
-    ) -> (StatusCode, Json<Option<IngredientResponse>>) {
+    ) -> Result<(StatusCode, Json<IngredientResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(true) = state.session_is_valid(session_id.value_trimmed()).await {
-                match state.db_client.create_ingredient(payload.into()).await {
-                    Ok(ingredient) => {
-                        log::info!("Ingredient with id {:?} created", ingredient.id.to_string());
-                        return (StatusCode::CREATED, Json(Some(ingredient.into())));
-                    }
-                    Err(err) => {
-                        if let CreateError::AlreadyExist { .. } = err {
-                            log::error!("{}", err.to_string());
-                            return (StatusCode::CONFLICT, Json(None));
-                        }
-                        log::error!("{}", err.to_string());
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
-                    }
-                }
+            if state.session_is_valid(session_id.value_trimmed()).await? {
+                let ingredient = state.db_client.create_ingredient(payload.into()).await?;
+                log::info!("Ingredient with id {:?} created", ingredient.id.to_string());
+                return Ok((StatusCode::CREATED, Json(ingredient.into())));
             }
         }
-        log::debug!("Could not create ingredient: user unauthorized");
-        (StatusCode::UNAUTHORIZED, Json(None))
+        Err(AppError::Unauthorized)
     }
 
-    async fn list_ingredients(
+    async fn list(
         State(state): State<AppState>,
         jar: CookieJar,
         Query(query_params): Query<ListQueryParams>,
-    ) -> (StatusCode, Json<Option<IngredientListResponse>>) {
+    ) -> Result<(StatusCode, Json<IngredientListResponse>), AppError> {
+        if query_params.name.is_some() && query_params.name_contains.is_some() {
+            return Err(AppError::UnprocessableEntity {
+                error: eyre!("Only one of name or name_contains can be defined."),
+            });
+        }
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(true) = state.session_is_valid(session_id.value_trimmed()).await {
-                match state.db_client.list_ingredients(query_params.into()).await {
-                    Ok(ingredients) => {
-                        log::info!("{:?} ingredients collected", ingredients.items.len());
-                        return (StatusCode::OK, Json(Some(ingredients.into())));
-                    }
-                    Err(err) => {
-                        log::error!("{}", err.to_string());
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
-                    }
-                }
+            if state.session_is_valid(session_id.value_trimmed()).await? {
+                let list_params = query_params.into();
+                let ingredients: Vec<IngredientResponse> =
+                    state.db_client.list_ingredients(&list_params).await?.into();
+                log::info!("{:?} ingredients collected", ingredients.len());
+                let metadata = state
+                    .db_client
+                    .get_ingredients_metadata(&list_params)
+                    .await?
+                    .into();
+                return Ok((
+                    StatusCode::OK,
+                    Json(IngredientListResponse::from(ingredients, metadata)),
+                ));
             }
         }
-        log::debug!("Could not list ingredients: user unauthorized");
-        (StatusCode::UNAUTHORIZED, Json(None))
+        Err(AppError::Unauthorized)
     }
 
-    async fn get_ingredient(
+    async fn get(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
-    ) -> (StatusCode, Json<Option<IngredientResponse>>) {
+    ) -> Result<(StatusCode, Json<IngredientResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(true) = state.session_is_valid(session_id.value_trimmed()).await {
-                match state.db_client.get_ingredient(id).await {
-                    Ok(ingredient) => {
-                        log::info!("Got ingredient with id {:?}", ingredient.id);
-                        return (StatusCode::OK, Json(Some(ingredient.into())));
-                    }
-                    Err(err) => {
-                        if let GetError::NotFound { .. } = err {
-                            log::error!("{}", err.to_string());
-                            return (StatusCode::NOT_FOUND, Json(None));
-                        }
-                        log::error!("{}", err.to_string());
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(None));
-                    }
-                }
+            if state.session_is_valid(session_id.value_trimmed()).await? {
+                let ingredient = state.db_client.get_ingredient(id).await?;
+                log::info!("Got ingredient with id {:?}", ingredient.id);
+                return Ok((StatusCode::OK, Json(ingredient.into())));
             }
         }
-        log::debug!("Could not get ingredient: user unauthorized");
-        (StatusCode::UNAUTHORIZED, Json(None))
+        Err(AppError::Unauthorized)
     }
 
-    async fn delete_ingredient(
+    async fn delete(
         State(state): State<AppState>,
         jar: CookieJar,
         Path(id): Path<Uuid>,
-    ) -> StatusCode {
+    ) -> Result<StatusCode, AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                if state.user_is_admin(user_id).await.unwrap_or(false) {
-                    match state.db_client.delete_ingredient(id).await {
-                        Ok(()) => {
-                            log::info!("Deleted ingredient with id {:?}", id);
-                            return StatusCode::NO_CONTENT;
-                        }
-                        Err(err) => {
-                            if let DeleteError::NotFound { .. } = err {
-                                log::error!("{}", err.to_string());
-                                return StatusCode::NOT_FOUND;
-                            }
-                            log::error!("{}", err.to_string());
-                            return StatusCode::INTERNAL_SERVER_ERROR;
-                        }
-                    }
+            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
+                if state.user_is_admin(user_id).await? {
+                    state.db_client.delete_ingredient(id).await?;
+                    log::info!("Deleted ingredient with id {:?}", id);
+                    return Ok(StatusCode::NO_CONTENT);
                 }
             }
         }
-        log::debug!("Could not delete ingredient: user unauthorized");
-        StatusCode::UNAUTHORIZED
+        Err(AppError::Unauthorized)
     }
 }

@@ -1,4 +1,5 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc};
+use sea_orm::FromQueryResult;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -30,9 +31,12 @@ pub struct UpdateDto {
 
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
-    pub max_expiration_date: Option<NaiveDate>,
     pub user_id: Option<Uuid>,
     pub ingredient_id: Option<Uuid>,
+    pub name_contains: Option<String>,
+    pub max_expiration_date: Option<NaiveDate>,
+    pub limit: u64,
+    pub offset: u64,
 }
 
 #[derive(Serialize, Debug, Clone, Eq, PartialEq)]
@@ -48,11 +52,6 @@ pub struct PantryItemDto {
     pub user_id: Uuid,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-}
-
-#[derive(Serialize, Debug, PartialEq, Eq)]
-pub struct PantryItemsListDto {
-    pub items: Vec<PantryItemDto>,
 }
 
 impl From<CreateDto> for Model {
@@ -91,4 +90,26 @@ impl From<Model> for PantryItemDto {
             updated_at: value.updated_at,
         }
     }
+}
+
+#[derive(Serialize, Debug, Clone, Eq, PartialEq, FromQueryResult)]
+pub struct PantryItemJoinDto {
+    pub id: Uuid,
+    pub ingredient_id: Uuid,
+    pub ingredient_name: String,
+    pub purchase_date: Option<NaiveDate>,
+    pub expiration_date: Option<NaiveDate>,
+    pub quantity: Option<i32>,
+    pub weight_grams: Option<i32>,
+    pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
+    pub user_id: Uuid,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+pub struct PantryItemsListDto {
+    pub items: Vec<PantryItemJoinDto>,
 }

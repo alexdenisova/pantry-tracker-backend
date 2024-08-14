@@ -31,6 +31,8 @@ pub struct UserDto {
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
     pub name: Option<String>,
+    pub limit: u64,
+    pub offset: u64,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]

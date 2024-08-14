@@ -1,12 +1,13 @@
-use color_eyre::Result as AnyResult;
+use color_eyre::eyre::eyre;
 use sea_orm::DatabaseConnection;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use uuid::Uuid;
 
+use crate::database::errors::GetError;
 use crate::database::{DBClient, DBTrait};
-use crate::redis::{RedisCommand, RedisCommands};
+use crate::redis::{RedisCommand, RedisCommands, RedisError, RedisResult};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -23,21 +24,22 @@ impl AppState {
         }
     }
     /// Returns the `user_id`
-    pub async fn session_is_valid(&self, session_id: &str) -> AnyResult<bool> {
+    pub async fn session_is_valid(&self, session_id: &str) -> RedisResult<bool> {
         Ok(self.redis_sender.get(session_id).await?.is_some())
     }
     /// Returns the `user_id`
-    pub async fn get_sessions_user(&self, session_id: &str) -> AnyResult<Option<Uuid>> {
+    pub async fn get_sessions_user(&self, session_id: &str) -> RedisResult<Option<Uuid>> {
         match self.redis_sender.get(session_id).await? {
-            Some(id) => Ok(Some(Uuid::from_str(&id)?)),
+            Some(id) => Ok(Some(Uuid::from_str(&id).map_err(|err| {
+                RedisError::Redis {
+                    error: eyre!("Session id value is not uuid: {err}"),
+                }
+            })?)),
             None => Ok(None),
         }
     }
 
-    pub async fn user_is_admin(&self, user_id: Uuid) -> AnyResult<bool> {
-        match self.db_client.get_user(user_id).await {
-            Ok(user) => Ok(user.admin),
-            Err(err) => Err(err.into()),
-        }
+    pub async fn user_is_admin(&self, user_id: Uuid) -> Result<bool, GetError> {
+        Ok(self.db_client.get_user(user_id).await?.admin)
     }
 }

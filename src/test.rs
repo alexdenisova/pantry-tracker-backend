@@ -4,7 +4,6 @@ use color_eyre::Result as AnyResult;
 use crate::database::DBTrait;
 use crate::server::routes::utils::hash_password;
 
-
 #[allow(clippy::too_many_lines)]
 pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<()> {
     let chicken = client
@@ -12,26 +11,14 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
             name: "Chicken".to_owned(),
         })
         .await?;
-    let _ = client
-        .create_ingredient_name(crate::database::ingredient_names::dto::CreateDto {
-            name: "Chicken Breast".to_owned(),
-            ingredient_id: chicken.id,
-        })
-        .await?;
     let rice = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Rice".to_owned(),
         })
         .await?;
-    let garlic = client
+    let _garlic = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Garlic".to_owned(),
-        })
-        .await?;
-    let _ = client
-        .create_ingredient_name(crate::database::ingredient_names::dto::CreateDto {
-            name: "Garlic Clove".to_owned(),
-            ingredient_id: garlic.id,
         })
         .await?;
 

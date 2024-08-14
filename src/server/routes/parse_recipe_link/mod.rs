@@ -7,6 +7,7 @@ use axum::{
     routing::get,
     Router,
 };
+use color_eyre::eyre::eyre;
 use htmlentity::entity::ICodedDataTrait;
 use scraper::{Html, Selector};
 use serde_json::json;
@@ -17,6 +18,7 @@ use url::Url;
 use urlencoding::decode;
 
 use self::payload::{ListQueryParams, ParsedRecipeLinkResponse};
+use crate::server::routes::errors::AppError;
 use crate::server::routes::parse_ingredients::parse_ingredients;
 use crate::server::routes::parse_ingredients::payload::ParsedRecipeIngredient;
 use crate::server::AppState;
@@ -24,7 +26,7 @@ use crate::server::AppState;
 pub struct ParsedRecipeLinkRouter {}
 
 impl ParsedRecipeLinkRouter {
-    pub fn get() -> Router<AppState> {
+    pub fn router() -> Router<AppState> {
         Router::new().route("/", get(ParsedRecipeLinkRouter::parse_recipe_link))
     }
 
@@ -32,34 +34,30 @@ impl ParsedRecipeLinkRouter {
     async fn parse_recipe_link(
         State(_): State<AppState>,
         Query(query_params): Query<ListQueryParams>,
-    ) -> (StatusCode, Json<Option<ParsedRecipeLinkResponse>>) {
+    ) -> Result<(StatusCode, Json<ParsedRecipeLinkResponse>), AppError> {
         if let Ok(link) = decode(&query_params.link) {
-            let json = match get_recipe_json(link.borrow()).await {
-                Ok(res) => res,
-                Err(e) => {
-                    log::warn!("Error getting recipe link: {}", e);
-                    return (StatusCode::UNPROCESSABLE_ENTITY, Json(None));
-                }
-            };
+            let json = get_recipe_json(link.borrow()).await?;
             let name = get_name(&json);
             let prep_time_mins = get_time_field(&json, "prepTime");
             let total_time_mins = get_time_field(&json, "totalTime");
             let image = get_image(&json);
             let ingredients = get_ingredients(&json);
             let instructions = get_instructions(&json);
-            return (
+            return Ok((
                 StatusCode::OK,
-                Json(Some(ParsedRecipeLinkResponse {
+                Json(ParsedRecipeLinkResponse {
                     name,
                     prep_time_mins,
                     total_time_mins,
                     instructions,
                     image,
                     ingredients,
-                })),
-            );
+                }),
+            ));
         }
-        (StatusCode::UNPROCESSABLE_ENTITY, Json(None))
+        Err(AppError::UnprocessableEntity {
+            error: eyre!("Link must be urlencoded."),
+        })
     }
 }
 

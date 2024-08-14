@@ -12,6 +12,8 @@ impl From<LoginPayload> for ListParamsDto {
     fn from(val: LoginPayload) -> Self {
         ListParamsDto {
             name: Some(val.username),
+            limit: 1,
+            offset: 0,
         }
     }
 }

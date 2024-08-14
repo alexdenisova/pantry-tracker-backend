@@ -2,10 +2,16 @@ pub mod dto;
 
 use async_trait::async_trait;
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
+use migrations::{Expr, Func};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, JoinType, PaginatorTrait, QueryFilter,
+    QueryOrder, QuerySelect, RelationTrait, Select, Set,
+};
 use uuid::Uuid;
 
 use self::dto::{CreateDto, ListParamsDto, PantryItemDto, PantryItemsListDto, UpdateDto};
+use crate::database::dto::MetadataDto;
+use crate::database::pantry_items::dto::PantryItemJoinDto;
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
@@ -16,10 +22,15 @@ use db_entities::pantry_items::{ActiveModel, Column, Entity, Model};
 pub trait DatabaseCRUD {
     async fn create_pantry_item(&self, request: CreateDto) -> Result<PantryItemDto, CreateError>;
     async fn get_pantry_item(&self, id: Uuid) -> Result<PantryItemDto, GetError>;
-    async fn list_pantry_items(
+    async fn get_pantry_item_join(&self, id: Uuid) -> Result<PantryItemJoinDto, GetError>;
+    async fn list_pantry_items_join(
         &self,
-        list_params: ListParamsDto,
+        list_params: &ListParamsDto,
     ) -> Result<PantryItemsListDto, ListError>;
+    async fn get_pantry_items_join_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError>;
     async fn update_pantry_item(
         &self,
         id: Uuid,
@@ -57,30 +68,50 @@ impl DatabaseCRUD for DBClient {
             .ok_or(GetError::NotFound { id })?
             .into())
     }
-    async fn list_pantry_items(
-        &self,
-        list_params: ListParamsDto,
-    ) -> Result<PantryItemsListDto, ListError> {
-        let mut entity = match list_params.user_id {
-            Some(value) => Entity::find().filter(Column::UserId.eq(value)),
-            None => Entity::find(),
-        };
-        entity = match list_params.ingredient_id {
-            Some(value) => entity.filter(Column::IngredientId.eq(value)),
-            None => entity,
-        };
-        Ok(PantryItemsListDto {
-            items: match list_params.max_expiration_date {
-                Some(value) => entity.filter(Column::ExpirationDate.lte(value)),
-                None => entity,
-            }
-            .order_by_desc(Column::UpdatedAt)
-            .all(&self.database_connection)
+    async fn get_pantry_item_join(&self, id: Uuid) -> Result<PantryItemJoinDto, GetError> {
+        Ok(Entity::find_by_id(id)
+            .join(
+                JoinType::InnerJoin,
+                db_entities::pantry_items::Relation::Ingredients.def(),
+            )
+            .column_as(db_entities::ingredients::Column::Name, "ingredient_name")
+            .into_model::<PantryItemJoinDto>()
+            .one(&self.database_connection)
             .await
-            .map_err(|err| ListError::Unexpected { error: err.into() })?
-            .into_iter()
-            .map(Into::into)
-            .collect(),
+            .map_err(|err| GetError::Unexpected {
+                id,
+                error: err.into(),
+            })?
+            .ok_or(GetError::NotFound { id })?)
+    }
+    async fn list_pantry_items_join(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<PantryItemsListDto, ListError> {
+        Ok(PantryItemsListDto {
+            items: list_entity(list_params)
+                .limit(list_params.limit)
+                .offset(list_params.offset)
+                .order_by_desc(Column::UpdatedAt)
+                .into_model::<PantryItemJoinDto>()
+                .all(&self.database_connection)
+                .await
+                .map_err(|err| ListError::Unexpected { error: err.into() })?,
+        })
+    }
+    async fn get_pantry_items_join_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError> {
+        let total_count = list_entity(list_params)
+            .count(&self.database_connection)
+            .await
+            .map_err(|err| ListError::Unexpected { error: err.into() })?;
+        Ok(MetadataDto {
+            page: list_params.offset / list_params.limit + 1,
+            per_page: list_params.limit,
+            page_count: total_count / list_params.limit + 1,
+            total_count,
         })
     }
     async fn update_pantry_item(
@@ -88,7 +119,6 @@ impl DatabaseCRUD for DBClient {
         id: Uuid,
         request: UpdateDto,
     ) -> Result<PantryItemDto, UpdateError> {
-        println!("in 0");
         let pantry_item: Model = Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
@@ -97,7 +127,6 @@ impl DatabaseCRUD for DBClient {
                 error: err.into(),
             })?
             .ok_or(UpdateError::NotFound { id })?;
-        println!("in");
         let mut pantry_item: ActiveModel = pantry_item.into();
         pantry_item.ingredient_id = Set(request.ingredient_id);
         pantry_item.user_id = Set(request.user_id);
@@ -141,4 +170,31 @@ impl DatabaseCRUD for DBClient {
             Ok(())
         }
     }
+}
+
+fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
+    let mut entity = Entity::find();
+    if let Some(value) = list_params.user_id {
+        entity = entity.filter(Column::UserId.eq(value));
+    }
+    if let Some(value) = list_params.ingredient_id {
+        entity = entity.filter(Column::IngredientId.eq(value));
+    }
+    if let Some(value) = &list_params.name_contains {
+        entity = entity.filter(
+            Expr::expr(Func::lower(Expr::col(
+                db_entities::ingredients::Column::Name,
+            )))
+            .like(format!("%{}%", value.to_lowercase())),
+        );
+    }
+    if let Some(value) = list_params.max_expiration_date {
+        entity = entity.filter(Column::ExpirationDate.lte(value));
+    }
+    entity
+        .join(
+            JoinType::InnerJoin,
+            db_entities::pantry_items::Relation::Ingredients.def(),
+        )
+        .column_as(db_entities::ingredients::Column::Name, "ingredient_name")
 }

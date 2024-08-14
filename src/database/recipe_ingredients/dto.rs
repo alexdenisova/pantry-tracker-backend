@@ -16,7 +16,8 @@ pub struct CreateDto {
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
     pub recipe_id: Option<Uuid>,
-    pub ingredient_id: Option<Uuid>,
+    pub limit: u64,
+    pub offset: u64,
 }
 
 #[derive(Deserialize, Debug, Clone)]

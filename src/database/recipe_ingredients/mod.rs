@@ -2,12 +2,17 @@ pub mod dto;
 
 use async_trait::async_trait;
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+    QuerySelect, Select, Set,
+};
 use uuid::Uuid;
 
 use self::dto::{
     CreateDto, ListParamsDto, RecipeIngredientDto, RecipeIngredientsListDto, UpdateDto,
 };
+
+use crate::database::dto::MetadataDto;
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
@@ -23,8 +28,12 @@ pub trait DatabaseCRUD {
     async fn get_recipe_ingredient(&self, id: Uuid) -> Result<RecipeIngredientDto, GetError>;
     async fn list_recipe_ingredients(
         &self,
-        list_params: ListParamsDto,
+        list_params: &ListParamsDto,
     ) -> Result<RecipeIngredientsListDto, ListError>;
+    async fn get_recipe_ingredients_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError>;
     async fn update_recipe_ingredient(
         &self,
         id: Uuid,
@@ -67,18 +76,12 @@ impl DatabaseCRUD for DBClient {
     }
     async fn list_recipe_ingredients(
         &self,
-        list_params: ListParamsDto,
+        list_params: &ListParamsDto,
     ) -> Result<RecipeIngredientsListDto, ListError> {
-        let mut entity = match list_params.recipe_id {
-            Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
-            None => Entity::find(),
-        };
-        entity = match list_params.ingredient_id {
-            Some(value) => entity.filter(Column::IngredientId.eq(value)),
-            None => entity,
-        };
         Ok(RecipeIngredientsListDto {
-            items: entity
+            items: list_entity(list_params)
+                .limit(list_params.limit)
+                .offset(list_params.offset)
                 .order_by_desc(Column::UpdatedAt)
                 .all(&self.database_connection)
                 .await
@@ -86,6 +89,21 @@ impl DatabaseCRUD for DBClient {
                 .into_iter()
                 .map(Into::into)
                 .collect(),
+        })
+    }
+    async fn get_recipe_ingredients_metadata(
+        &self,
+        list_params: &ListParamsDto,
+    ) -> Result<MetadataDto, ListError> {
+        let total_count = list_entity(list_params)
+            .count(&self.database_connection)
+            .await
+            .map_err(|err| ListError::Unexpected { error: err.into() })?;
+        Ok(MetadataDto {
+            page: list_params.offset / list_params.limit + 1,
+            per_page: list_params.limit,
+            page_count: total_count / list_params.limit + 1,
+            total_count,
         })
     }
     async fn update_recipe_ingredient(
@@ -139,5 +157,12 @@ impl DatabaseCRUD for DBClient {
         } else {
             Ok(())
         }
+    }
+}
+
+fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
+    match list_params.recipe_id {
+        Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
+        None => Entity::find(),
     }
 }
