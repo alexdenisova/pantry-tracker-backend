@@ -1,86 +1,49 @@
 use async_trait::async_trait;
-use chrono::NaiveDateTime;
 use entities::recipes::{ActiveModel, Column, Entity, Model};
 use sea_orm::*;
 use uuid::Uuid;
 
-use crate::DBClient;
-
-pub struct Request {
-    pub id: Uuid,
-    pub name: String,
-    pub cooking_time_mins: Option<i32>,
-    pub link: Option<String>,
-    pub instructions: Option<String>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-}
-
-pub struct Response {
-    pub id: Uuid,
-    pub name: String,
-    pub cooking_time_mins: Option<i32>,
-    pub link: Option<String>,
-    pub instructions: Option<String>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
-}
-
-impl From<Request> for Model {
-    // TODO: make this a macro
-    fn from(value: Request) -> Self {
-        Model {
-            id: value.id,
-            name: value.name,
-            cooking_time_mins: value.cooking_time_mins,
-            link: value.link,
-            instructions: value.instructions,
-            created_at: value.created_at,
-            updated_at: value.updated_at,
-        }
-    }
-}
-
-impl From<Model> for Response {
-    fn from(value: Model) -> Self {
-        Response {
-            id: value.id,
-            name: value.name,
-            cooking_time_mins: value.cooking_time_mins,
-            link: value.link,
-            instructions: value.instructions,
-            created_at: value.created_at,
-            updated_at: value.updated_at,
-        }
-    }
-}
+use crate::{
+    errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
+    DBClient,
+};
 
 #[async_trait]
 pub trait DatabaseCRUD {
-    async fn create_recipe(&self, request: Request) -> Result<Response, DbErr>;
-    async fn get_recipe(&self, id: Uuid) -> Result<Option<Response>, DbErr>;
-    async fn list_recipes(&self, predicate: Option<String>) -> Result<Vec<Response>, DbErr>;
-    async fn update_recipe(&self, id: Uuid, request: Request) -> Result<Response, DbErr>;
-    async fn delete_recipe(&self, id: Uuid) -> Result<(), DbErr>;
+    async fn create_recipe(&self, request: Model) -> Result<Model, CreateError>;
+    async fn get_recipe(&self, id: Uuid) -> Result<Model, GetError>;
+    async fn list_recipes(&self, predicate: Option<String>) -> Result<Vec<Model>, ListError>;
+    async fn update_recipe(&self, id: Uuid, request: ActiveModel) -> Result<Model, UpdateError>;
+    async fn delete_recipe(&self, id: Uuid) -> Result<(), DeleteError>;
 }
 
 #[async_trait]
 impl DatabaseCRUD for DBClient {
-    async fn create_recipe(&self, request: Request) -> Result<Response, DbErr> {
-        let model: Model = request.into();
-        let active_model: ActiveModel = model.into();
+    async fn create_recipe(&self, request: Model) -> Result<Model, CreateError> {
+        let id = request.id;
+        let active_model: ActiveModel = request.into();
         active_model
             .insert(&self.database_connection)
             .await
-            .map(Into::into)
+            .map_err(|err| {
+                if let DbErr::RecordNotInserted = err {
+                    CreateError::AlreadyExist { id }
+                } else {
+                    CreateError::Unexpected { error: err.into() }
+                }
+            })
     }
-    async fn get_recipe(&self, id: Uuid) -> Result<Option<Response>, DbErr> {
+    async fn get_recipe(&self, id: Uuid) -> Result<Model, GetError> {
         Entity::find_by_id(id)
             .one(&self.database_connection)
             .await
-            .map(|x| x.map(Into::into))
+            .map_err(|err| GetError::Unexpected {
+                id,
+                error: err.into(),
+            })?
+            .ok_or(GetError::NotFound { id })
     }
-    async fn list_recipes(&self, predicate: Option<String>) -> Result<Vec<Response>, DbErr> {
+    async fn list_recipes(&self, predicate: Option<String>) -> Result<Vec<Model>, ListError> {
         match predicate {
             Some(value) => Entity::find().filter(Column::Name.contains(value)),
             None => Entity::find(),
@@ -89,22 +52,38 @@ impl DatabaseCRUD for DBClient {
         .order_by_desc(Column::Id)
         .all(&self.database_connection)
         .await
-        .map(|x| x.into_iter().map(Into::into).collect())
+        .map_err(|err| ListError::Unexpected { error: err.into() })
     }
-    async fn update_recipe(&self, id: Uuid, request: Request) -> Result<Response, DbErr> {
-        let model: Model = request.into();
-        let active_model: ActiveModel = model.into();
-
-        Entity::update(active_model)
+    async fn update_recipe(&self, id: Uuid, request: ActiveModel) -> Result<Model, UpdateError> {
+        Entity::update(request)
             .filter(Column::Id.eq(id))
             .exec(&self.database_connection)
             .await
-            .map(Into::into)
+            .map_err(|err| {
+                if let DbErr::RecordNotUpdated = err {
+                    UpdateError::NotFound { id }
+                } else {
+                    UpdateError::Unexpected {
+                        id,
+                        error: err.into(),
+                    }
+                }
+            })
     }
-    async fn delete_recipe(&self, id: Uuid) -> Result<(), DbErr> {
-        Entity::delete_by_id(id)
+    async fn delete_recipe(&self, id: Uuid) -> Result<(), DeleteError> {
+        if Entity::delete_by_id(id)
             .exec(&self.database_connection)
             .await
-            .map(|_| ())
+            .map_err(|err| DeleteError::Unexpected {
+                id,
+                error: err.into(),
+            })?
+            .rows_affected
+            == 0
+        {
+            Err(DeleteError::NotFound { id })
+        } else {
+            Ok(())
+        }
     }
 }

@@ -1,5 +1,8 @@
+use crate::errors::HealthcheckError;
+use async_trait::async_trait;
 use sea_orm::DatabaseConnection;
 
+pub mod errors;
 pub mod ingredients;
 pub mod pantry_items;
 pub mod recipe_ingredients;
@@ -19,8 +22,24 @@ impl DBClient {
     }
 }
 
-pub trait DatabaseCRUD:
-    ingredients::DatabaseCRUD
+#[async_trait]
+pub trait DBHealth {
+    async fn health(&self) -> Result<(), HealthcheckError>;
+}
+
+#[async_trait]
+impl DBHealth for DBClient {
+    async fn health(&self) -> Result<(), HealthcheckError> {
+        self.database_connection
+            .ping()
+            .await
+            .map_err(|err| HealthcheckError::Unexpected { error: err.into() })
+    }
+}
+
+pub trait DBTrait:
+    DBHealth
+    + ingredients::DatabaseCRUD
     + pantry_items::DatabaseCRUD
     + recipe_ingredients::DatabaseCRUD
     + recipe_users::DatabaseCRUD
@@ -30,4 +49,4 @@ pub trait DatabaseCRUD:
 {
 }
 
-impl DatabaseCRUD for DBClient {}
+impl DBTrait for DBClient {}
