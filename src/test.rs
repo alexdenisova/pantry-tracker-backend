@@ -54,7 +54,7 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
             quantity: None,
             weight_grams: Some(400),
             volume_milli_litres: None,
-            essential: false,
+            essential: true,
             running_low: None,
         })
         .await?;
