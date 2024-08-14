@@ -23,6 +23,16 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Determine changed files
+      uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          publish:
+            - 'crates/**'
+            - 'src/**'
+            - 'Cargo.*'
+            - 'Dockerfile'
     - name: Compute Version
       shell: bash
       id: compute
@@ -31,7 +41,7 @@ runs:
         release_version="$current"
         needs_commit=false
 
-        if [[ ${{ github.ref }} != refs/tags* ]]; then
+        if [[ "${{ steps.filter.outputs.publish }}" == "true" ]] && [[ ${{ github.ref }} != refs/tags* ]]; then
           tags=($(curl -sL -X 'GET' \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ inputs.token }}" \

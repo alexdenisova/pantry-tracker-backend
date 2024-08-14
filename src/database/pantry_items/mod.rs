@@ -102,6 +102,8 @@ impl DatabaseCRUD for DBClient {
         pantry_item.quantity = Set(request.quantity);
         pantry_item.weight_grams = Set(request.weight_grams);
         pantry_item.volume_milli_litres = Set(request.volume_milli_litres);
+        pantry_item.essential = Set(request.essential);
+        pantry_item.running_low = Set(request.running_low);
         pantry_item.updated_at = Set(Utc::now().naive_utc());
 
         Ok(Entity::update(pantry_item)

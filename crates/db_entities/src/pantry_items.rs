@@ -13,6 +13,8 @@ pub struct Model {
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
     pub volume_milli_litres: Option<i32>,
+    pub essential: bool,
+    pub running_low: Option<i32>,
     pub user_id: Uuid,
     pub created_at: DateTime,
     pub updated_at: DateTime,
