@@ -65,7 +65,6 @@ impl DatabaseCRUD for DBClient {
                 None => Entity::find(),
             }
             .order_by_desc(Column::Name)
-            .order_by_desc(Column::CreatedAt)
             .all(&self.database_connection)
             .await
             .map_err(|err| ListError::Unexpected { error: err.into() })?
