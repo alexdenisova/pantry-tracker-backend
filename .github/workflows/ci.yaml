@@ -133,3 +133,13 @@ jobs:
           git add -A
           git commit -m "New ${{ github.event.repository.name }} version"
           git push
+  clean-image-tags:
+    runs-on: ubuntu-latest
+    needs: publish-image
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/clean_image_tags
+        with:
+          package_name: ${{ github.event.repository.name }}
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          leave: 2
