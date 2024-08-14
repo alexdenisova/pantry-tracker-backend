@@ -3,11 +3,22 @@ mod state;
 
 use axum::routing::get;
 use axum::{extract::State, http::StatusCode, serve, Router};
-pub use state::AppState;
+use http::{header::CONTENT_TYPE, Method};
 use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
+use tower_http::cors::{Any, CorsLayer};
 
+use crate::server::routes::login::LoginRouter;
+
+use self::routes::ingredients::IngredientRouter;
+use self::routes::pantry_items::PantryItemRouter;
+use self::routes::parse_ingredients::ParseIngredientsRouter;
+use self::routes::parse_recipe_link::ParsedRecipeLinkRouter;
+use self::routes::possible_recipes::PossibleRecipesRouter;
+use self::routes::recipe_ingredients::RecipeIngredientRouter;
+use self::routes::recipes::RecipeRouter;
 use self::routes::users::UserRouter;
+pub use state::AppState;
 
 pub type ServerResult<T> = Result<T, ServerError>;
 
@@ -36,11 +47,25 @@ impl Server {
             }
         })?;
 
+        // let cors = CorsLayer::new()
+        //     .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        //     .allow_origin(Any)
+        //     .allow_headers([CONTENT_TYPE]);
+
         let router: Router = Router::new()
             .route("/health", get(health))
+            .nest("/login", LoginRouter::get())
+            .nest("/ingredients", IngredientRouter::get())
+            .nest("/pantry_items", PantryItemRouter::get())
+            .nest("/parse_ingredients", ParseIngredientsRouter::get())
+            .nest("/parse_recipe_link", ParsedRecipeLinkRouter::get())
+            .nest("/possible_recipes", PossibleRecipesRouter::list())
+            .nest("/recipes", RecipeRouter::get())
+            .nest("/recipe_ingredients", RecipeIngredientRouter::get())
             .nest("/users", UserRouter::get())
             .with_state(self.state)
             .fallback(Server::fallback);
+        // .layer(cors);
 
         serve(listener, router).await.map_err(|err| {
             log::error!("{}", err.to_string());
@@ -59,8 +84,7 @@ impl Server {
 }
 
 async fn health(State(state): State<AppState>) -> StatusCode {
-    if state.dao.health().await.is_ok() {
-        log::debug!("Healthy");
+    if state.db_client.health().await.is_ok() {
         StatusCode::OK
     } else {
         log::warn!("Unhealthy");

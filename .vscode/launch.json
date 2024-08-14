@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'pantry-tracker'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=pantry-tracker",
+                    "--package=pantry-tracker"
+                ],
+                "filter": {
+                    "name": "pantry-tracker",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "run"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'pantry-tracker'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=pantry-tracker",
+                    "--package=pantry-tracker"
+                ],
+                "filter": {
+                    "name": "pantry-tracker",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+    ]
+}
