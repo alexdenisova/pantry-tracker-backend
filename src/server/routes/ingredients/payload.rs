@@ -4,34 +4,18 @@ use titlecase::titlecase;
 use uuid::Uuid;
 
 use crate::database::ingredients::dto::{
-    CreateDto, IngredientDto, IngredientsListDto, ListParamsDto, UpdateDto,
+    CreateDto, IngredientDto, IngredientsListDto, ListParamsDto,
 };
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreatePayload {
     pub name: String,
-    pub can_be_eaten_raw: Option<bool>,
 }
 
 impl From<CreatePayload> for CreateDto {
     fn from(val: CreatePayload) -> Self {
         CreateDto {
             name: titlecase(&val.name),
-            can_be_eaten_raw: val.can_be_eaten_raw,
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct UpdatePayload {
-    pub can_be_eaten_raw: Option<bool>,
-}
-
-impl From<UpdatePayload> for UpdateDto {
-    fn from(val: UpdatePayload) -> Self {
-        UpdateDto {
-            name: None,
-            can_be_eaten_raw: val.can_be_eaten_raw,
         }
     }
 }
@@ -51,7 +35,6 @@ impl From<ListQueryParams> for ListParamsDto {
 pub struct IngredientResponse {
     pub id: Uuid,
     pub name: String,
-    pub can_be_eaten_raw: Option<bool>,
     pub created_at: NaiveDateTime,
 }
 
@@ -60,7 +43,6 @@ impl From<IngredientDto> for IngredientResponse {
         IngredientResponse {
             id: val.id,
             name: val.name,
-            can_be_eaten_raw: val.can_be_eaten_raw,
             created_at: val.created_at,
         }
     }

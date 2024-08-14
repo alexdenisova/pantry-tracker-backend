@@ -9,13 +9,11 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
     let chicken = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Chicken".to_owned(),
-            can_be_eaten_raw: Some(false),
         })
         .await?;
     let rice = client
         .create_ingredient(crate::database::ingredients::dto::CreateDto {
             name: "Rice".to_owned(),
-            can_be_eaten_raw: Some(false),
         })
         .await?;
 
@@ -30,7 +28,7 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
         .create_user(crate::database::users::dto::CreateDto {
             name: "admin".to_owned(),
             password_hash: hash_password("2345"),
-            admin: Some(false),
+            admin: Some(true),
         })
         .await?;
 
@@ -43,6 +41,8 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
             quantity: None,
             weight_grams: Some(400),
             volume_milli_litres: None,
+            essential: false,
+            running_low: None,
         })
         .await?;
     client
@@ -54,6 +54,8 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
             quantity: None,
             weight_grams: Some(400),
             volume_milli_litres: None,
+            essential: false,
+            running_low: None,
         })
         .await?;
     client
@@ -65,6 +67,8 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
             quantity: None,
             weight_grams: Some(400),
             volume_milli_litres: None,
+            essential: true,
+            running_low: Some(500),
         })
         .await?;
 

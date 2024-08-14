@@ -7,13 +7,6 @@ use db_entities::ingredients::Model;
 #[derive(Deserialize, Debug, Clone)]
 pub struct CreateDto {
     pub name: String,
-    pub can_be_eaten_raw: Option<bool>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct UpdateDto {
-    pub name: Option<String>,
-    pub can_be_eaten_raw: Option<bool>,
 }
 
 #[derive(Deserialize, Debug, Default)]
@@ -25,7 +18,6 @@ pub struct ListParamsDto {
 pub struct IngredientDto {
     pub id: Uuid,
     pub name: String,
-    pub can_be_eaten_raw: Option<bool>,
     pub created_at: NaiveDateTime,
 }
 
@@ -41,7 +33,6 @@ impl From<CreateDto> for Model {
         Self {
             id: Uuid::new_v4(),
             name: value.name,
-            can_be_eaten_raw: value.can_be_eaten_raw,
             created_at: now,
         }
     }
@@ -52,7 +43,6 @@ impl From<Model> for IngredientDto {
         Self {
             id: value.id,
             name: value.name,
-            can_be_eaten_raw: value.can_be_eaten_raw,
             created_at: value.created_at,
         }
     }

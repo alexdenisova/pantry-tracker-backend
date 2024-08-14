@@ -18,7 +18,6 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .unique_key(),
                     )
-                    .col(ColumnDef::new(Ingredients::CanBeEatenRaw).boolean())
                     .col(
                         ColumnDef::new(Ingredients::CreatedAt)
                             .timestamp()
@@ -67,6 +66,8 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(PantryItems::Quantity).integer())
                     .col(ColumnDef::new(PantryItems::WeightGrams).integer())
                     .col(ColumnDef::new(PantryItems::VolumeMilliLitres).integer())
+                    .col(ColumnDef::new(PantryItems::Essential).boolean().default(false))
+                    .col(ColumnDef::new(PantryItems::RunningLow).integer())
                     .col(ColumnDef::new(PantryItems::UserId).uuid().not_null())
                     .col(
                         ColumnDef::new(PantryItems::CreatedAt)
@@ -230,7 +231,6 @@ pub enum Ingredients {
     Table,
     Id,
     Name,
-    CanBeEatenRaw,
     CreatedAt,
     // InSeason,
 }
@@ -256,6 +256,8 @@ pub enum PantryItems {
     Quantity,
     WeightGrams,
     VolumeMilliLitres,
+    Essential,
+    RunningLow,
     UserId,
     CreatedAt,
     UpdatedAt,
