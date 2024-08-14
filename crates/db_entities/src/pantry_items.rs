@@ -8,7 +8,6 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub ingredient_id: Uuid,
-    pub purchase_date: Option<Date>,
     pub expiration_date: Option<Date>,
     pub quantity: Option<i32>,
     pub weight_grams: Option<i32>,
