@@ -19,8 +19,8 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
 
     let user = client
         .create_user(crate::database::users::dto::CreateDto {
-            name: "test_user".to_owned(),
-            password_hash: hash_password("1234"),
+            name: "demo".to_owned(),
+            password_hash: hash_password(""),
             admin: Some(false),
         })
         .await?;

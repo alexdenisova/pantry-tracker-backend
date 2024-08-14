@@ -11,9 +11,7 @@ pub struct RedisClient {
 }
 
 impl RedisClient {
-    pub fn new(
-        url: &str
-    ) -> AnyResult<Self> {
+    pub fn new(url: &str) -> AnyResult<Self> {
         Ok(RedisClient {
             connection: Client::open(url)?.get_connection()?,
         })
@@ -23,8 +21,13 @@ impl RedisClient {
         self.connection.get(key).map_err(|e| eyre!(e))
     }
 
-    pub fn set(&mut self, key: &str, value: &str) -> AnyResult<()> {
-        self.connection.set(key, value).map_err(|e| eyre!(e))
+    pub fn set(&mut self, key: &str, value: &str, ttl_days: Option<u16>) -> AnyResult<()> {
+        self.connection.set(key, value).map_err(|e| eyre!(e))?;
+        if let Some(days) = ttl_days {
+            self.connection
+                .expire(key, i64::from(days) * 24 * 60 * 60)?;
+        }
+        Ok(())
     }
 
     pub fn delete(&mut self, key: &str) -> AnyResult<()> {
@@ -40,6 +43,7 @@ pub enum RedisCommand {
     Set {
         key: String,
         val: String,
+        ttl_days: Option<u16>,
         resp: Responder<()>,
     },
     Delete {
@@ -59,8 +63,13 @@ pub async fn new_redis_sender(mut redis_client: RedisClient) -> Sender<RedisComm
                 RedisCommand::Get { key, resp } => {
                     let _ = resp.send(redis_client.get(&key));
                 }
-                RedisCommand::Set { key, val, resp } => {
-                    let _ = resp.send(redis_client.set(&key, &val));
+                RedisCommand::Set {
+                    key,
+                    val,
+                    ttl_days: expire_days,
+                    resp,
+                } => {
+                    let _ = resp.send(redis_client.set(&key, &val, expire_days));
                 }
                 RedisCommand::Delete { key, resp } => {
                     let _ = resp.send(redis_client.delete(&key));
@@ -74,7 +83,7 @@ pub async fn new_redis_sender(mut redis_client: RedisClient) -> Sender<RedisComm
 
 pub trait RedisCommands {
     async fn get(&self, key: &str) -> AnyResult<Option<String>>;
-    async fn set(&self, key: &str, value: &str) -> AnyResult<()>;
+    async fn set(&self, key: &str, value: &str, expire_days: Option<u16>) -> AnyResult<()>;
     async fn delete(&self, key: &str) -> AnyResult<()>;
 }
 
@@ -89,17 +98,18 @@ impl RedisCommands for Sender<RedisCommand> {
         receiver.await?
     }
 
-    async fn set(&self, key: &str, value: &str) -> AnyResult<()> {
+    async fn set(&self, key: &str, value: &str, expire_days: Option<u16>) -> AnyResult<()> {
         let (sender, receiver) = oneshot::channel::<AnyResult<()>>();
         self.send(RedisCommand::Set {
             key: key.to_owned(),
             val: value.to_owned(),
+            ttl_days: expire_days,
             resp: sender,
         })
         .await?;
         receiver.await?
     }
-    
+
     async fn delete(&self, key: &str) -> AnyResult<()> {
         let (sender, receiver) = oneshot::channel::<AnyResult<()>>();
         self.send(RedisCommand::Delete {
