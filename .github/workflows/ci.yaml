@@ -6,11 +6,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-# TODO: build and publish only if crates, src, Cargo.lock/toml, Dockerfile change
+
 jobs:
   update-version:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request'
     outputs:
       stop_workflow: ${{ steps.update_version.outputs.stop_workflow }}
       release_version: ${{ steps.update_version.outputs.release_version }}
