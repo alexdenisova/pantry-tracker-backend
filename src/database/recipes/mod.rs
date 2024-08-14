@@ -2,9 +2,7 @@ pub mod dto;
 
 use async_trait::async_trait;
 use chrono::Utc;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, QueryFilter, QueryOrder, Set};
 use uuid::Uuid;
 
 use self::dto::{CreateDto, ListParamsDto, RecipeDto, RecipesListDto, UpdateDto};
@@ -61,8 +59,8 @@ impl DatabaseCRUD for DBClient {
             ),
             None => Entity::find(),
         };
-        entity = match list_params.cooking_time_mins {
-            Some(value) => entity.filter(Column::CookingTimeMins.lte(value)),
+        entity = match list_params.total_time_mins {
+            Some(value) => entity.filter(Column::TotalTimeMins.lte(value)),
             None => entity,
         };
         entity = match list_params.user_id {
@@ -92,9 +90,13 @@ impl DatabaseCRUD for DBClient {
         let mut recipe: ActiveModel = recipe.into();
         recipe.user_id = Set(request.user_id);
         recipe.name = Set(request.name);
-        recipe.cooking_time_mins = Set(request.cooking_time_mins);
+        recipe.prep_time_mins = Set(request.total_time_mins);
+        recipe.total_time_mins = Set(request.total_time_mins);
         recipe.link = Set(request.link);
         recipe.instructions = Set(request.instructions);
+        recipe.last_cooked = Set(request.last_cooked);
+        recipe.rating = Set(request.rating);
+        recipe.notes = Set(request.notes);
         recipe.updated_at = Set(Utc::now().naive_utc());
 
         Ok(Entity::update(recipe)
