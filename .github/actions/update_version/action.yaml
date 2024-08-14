@@ -23,9 +23,6 @@ runs:
   using: composite
   steps:
     - uses: actions/checkout@v4
-      if: steps.compute.outputs.needs_commit == 'true'
-      with:
-        token: ${{ inputs.token }}
     - name: Determine changed files
       uses: dorny/paths-filter@v3
       id: filter
@@ -85,6 +82,10 @@ runs:
         printf 'needs_commit=%s\n' "$needs_commit" >> $GITHUB_OUTPUT
         printf 'stop_workflow=%s\n' "$stop_workflow" >> $GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
+    - uses: actions/checkout@v4
+      if: steps.compute.outputs.needs_commit == 'true'
+      with:
+        token: ${{ inputs.token }}
     - name: Commit Version
       shell: bash
       if: steps.compute.outputs.needs_commit == 'true'
