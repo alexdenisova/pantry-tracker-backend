@@ -228,6 +228,9 @@ impl PantryItemRouter {
 }
 
 async fn verified_user(state: &AppState, id: Uuid, user_id: Uuid) -> Result<(), VerifyError> {
+    if let Ok(true) = state.user_is_admin(user_id).await {
+        return Ok(());
+    }
     match state.db_client.get_pantry_item(id).await {
         Ok(pantry_item) => {
             if pantry_item.user_id == user_id {

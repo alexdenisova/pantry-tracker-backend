@@ -8,8 +8,8 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 use color_eyre::eyre::eyre;
-use uuid::Uuid;
 use color_eyre::Result as AnyResult;
+use uuid::Uuid;
 
 use self::payload::PossibleRecipesResponse;
 use crate::database::pantry_items::dto::{
@@ -47,6 +47,7 @@ impl PossibleRecipesRouter {
                         .db_client
                         .list_recipe_ingredients(RecipeIngredientListDto {
                             recipe_id: Some(recipe.id),
+                            ingredient_id: None,
                         })
                         .await
                     {
@@ -95,6 +96,7 @@ async fn list_pantry_items(state: &AppState, user_id: Uuid) -> AnyResult<PantryI
         .list_pantry_items(PantryItemsListParamsDto {
             max_expiration_date: None,
             user_id: Some(user_id),
+            ingredient_id: None,
         })
         .await
     {
