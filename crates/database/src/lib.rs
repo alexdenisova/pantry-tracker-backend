@@ -26,6 +26,7 @@ pub trait DatabaseCRUD:
     + recipe_users::DatabaseCRUD
     + recipes::DatabaseCRUD
     + users::DatabaseCRUD
+    + recipe_ingredients::DatabaseExtra
 {
 }
 

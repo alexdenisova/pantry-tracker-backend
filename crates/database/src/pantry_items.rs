@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime};
-use entities::pantry_items::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use entities::pantry_items::{ActiveModel, Column, Entity, Model, Relation};
+use sea_orm::{
+    sea_query::{Alias, Expr},
+    *,
+};
 use uuid::Uuid;
 
 use crate::DBClient;
@@ -94,11 +97,11 @@ impl DatabaseCRUD for DBClient {
     }
     async fn list_pantry_items(&self) -> Result<Vec<Response>, DbErr> {
         Entity::find()
-        .order_by_desc(Column::UpdatedAt)
-        .order_by_desc(Column::Id)
-        .all(&self.database_connection)
-        .await
-        .map(|x| x.into_iter().map(Into::into).collect())
+            .order_by_desc(Column::UpdatedAt)
+            .order_by_desc(Column::Id)
+            .all(&self.database_connection)
+            .await
+            .map(|x| x.into_iter().map(Into::into).collect())
     }
     async fn update_pantry_item(&self, id: Uuid, request: Request) -> Result<Response, DbErr> {
         let model: Model = request.into();
@@ -115,5 +118,66 @@ impl DatabaseCRUD for DBClient {
             .exec(&self.database_connection)
             .await
             .map(|_| ())
+    }
+}
+
+#[derive(FromQueryResult, Debug)]
+pub struct PantryItemsResponse {
+    pub id: Uuid,
+    pub ingredient_id: Uuid,
+    pub ingredient_name: String,
+    pub purchase_date: Option<NaiveDate>,
+    pub expiration_date: NaiveDate,
+    pub quantity: i32,
+    pub weight_grams: Option<i32>,
+    pub volume_milli_litres: Option<i32>,
+}
+
+#[async_trait]
+pub trait DatabaseExtra {
+    async fn get_pantry_items_of_user(&self, recipe_id: Uuid) -> Result<Vec<Response>, DbErr>;
+    async fn get_pantry_item_names_of_user(
+        &self,
+        recipe_id: Uuid,
+    ) -> Result<Vec<PantryItemsResponse>, DbErr>;
+}
+
+#[async_trait]
+impl DatabaseExtra for DBClient {
+    async fn get_pantry_items_of_user(&self, user_id: Uuid) -> Result<Vec<Response>, DbErr> {
+        Entity::find()
+            .filter(Column::UserId.eq(user_id))
+            .all(&self.database_connection)
+            .await
+            .map(|x| x.into_iter().map(Into::into).collect())
+    }
+    async fn get_pantry_item_names_of_user(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Vec<PantryItemsResponse>, DbErr> {
+        Entity::find()
+            .select_only()
+            .columns([
+                Column::Id,
+                Column::IngredientId,
+                Column::PurchaseDate,
+                Column::ExpirationDate,
+                Column::Quantity,
+                Column::WeightGrams,
+                Column::VolumeMilliLitres,
+            ])
+            .column_as(
+                Expr::col((
+                    Alias::new("ingredients"),
+                    entities::ingredients::Column::Name,
+                )),
+                "ingredient_name",
+            )
+            .join(JoinType::InnerJoin, Relation::Ingredients.def())
+            .filter(Column::UserId.eq(user_id))
+            .into_model::<PantryItemsResponse>()
+            .all(&self.database_connection)
+            .await
+            .map(|x| x.into_iter().map(Into::into).collect())
     }
 }

@@ -5,7 +5,7 @@ use migrations::{Migrator, MigratorTrait};
 use sea_orm::*;
 use sea_orm_migration::prelude::*;
 use std::sync::Arc;
-use uuid::Uuid;
+use uuid::{uuid, Uuid};
 
 const DATABASE_URL: &str = "postgres://postgres:postgres@localhost:5432";
 const DB_NAME: &str = "food_db";
@@ -16,22 +16,22 @@ pub struct State {
 
 async fn run() -> Result<(), DbErr> {
     let db = Database::connect(DATABASE_URL).await?;
-    db.execute(Statement::from_string(
-        db.get_database_backend(),
-        format!("DROP DATABASE IF EXISTS \"{}\";", DB_NAME),
-    ))
-    .await?;
-    db.execute(Statement::from_string(
-        db.get_database_backend(),
-        format!("CREATE DATABASE \"{}\";", DB_NAME),
-    ))
-    .await?;
+    // db.execute(Statement::from_string(
+    //     db.get_database_backend(),
+    //     format!("DROP DATABASE IF EXISTS \"{}\";", DB_NAME),
+    // ))
+    // .await?;
+    // db.execute(Statement::from_string(
+    //     db.get_database_backend(),
+    //     format!("CREATE DATABASE \"{}\";", DB_NAME),
+    // ))
+    // .await?;
 
     let url = format!("{}/{}", DATABASE_URL, DB_NAME);
     let db = &Database::connect(&url).await?;
 
-    let schema_manager = SchemaManager::new(db); // To investigate the schema
-    Migrator::refresh(db).await?;
+    // let schema_manager = SchemaManager::new(db); // To investigate the schema
+    // Migrator::refresh(db).await?;
 
     let database_client = DBClient::new(Database::connect(&url).await?);
     let state = State {
@@ -46,6 +46,13 @@ async fn run() -> Result<(), DbErr> {
             updated_at: Utc::now().naive_utc(),
         })
         .await?;
+    println!(
+        "{:?}",
+        state
+            .repository
+            .get_ingredient_names_of_recipe(uuid!("b5ef82b5-d88c-42d7-9d79-962f273080b4"))
+            .await
+    );
     Ok(())
 }
 

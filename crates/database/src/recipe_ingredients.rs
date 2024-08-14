@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
-use entities::recipe_ingredients::{ActiveModel, Column, Entity, Model};
-use sea_orm::*;
+use entities::recipe_ingredients::{ActiveModel, Column, Entity, Model, Relation};
+use sea_orm::{
+    sea_query::{Alias, Expr},
+    *,
+};
 use uuid::Uuid;
 
 use crate::DBClient;
@@ -112,5 +115,66 @@ impl DatabaseCRUD for DBClient {
             .exec(&self.database_connection)
             .await
             .map(|_| ())
+    }
+}
+
+#[derive(FromQueryResult, Debug)]
+pub struct RecipeIngredientsResponse {
+    pub id: Uuid,
+    pub ingredient_id: Uuid,
+    pub ingredient_name: String,
+    pub amount: i32,
+    pub unit: String,
+    pub optional: bool,
+}
+
+#[async_trait]
+pub trait DatabaseExtra {
+    async fn get_all_ingredients_of_recipe(&self, recipe_id: Uuid) -> Result<Vec<Response>, DbErr>;
+    async fn get_ingredient_names_of_recipe(
+        &self,
+        recipe_id: Uuid,
+    ) -> Result<Vec<RecipeIngredientsResponse>, DbErr>;
+}
+
+#[async_trait]
+impl DatabaseExtra for DBClient {
+    async fn get_all_ingredients_of_recipe(&self, recipe_id: Uuid) -> Result<Vec<Response>, DbErr> {
+        Entity::find()
+            .filter(Column::RecipeId.eq(recipe_id))
+            .all(&self.database_connection)
+            .await
+            .map(|x| x.into_iter().map(Into::into).collect())
+    }
+    async fn get_ingredient_names_of_recipe(
+        &self,
+        recipe_id: Uuid,
+    ) -> Result<Vec<RecipeIngredientsResponse>, DbErr> {
+        Entity::find()
+            .select_only()
+            .columns([
+                Column::Id,
+                Column::IngredientId,
+                Column::Amount,
+                Column::Unit,
+                Column::Optional,
+            ])
+            .column_as(
+                Expr::col((
+                    Alias::new("ingredients"),
+                    entities::ingredients::Column::Name,
+                )),
+                "ingredient_name",
+            )
+            .join(JoinType::InnerJoin, Relation::Ingredients.def())
+            .filter(Column::RecipeId.eq(recipe_id))
+            .into_model::<RecipeIngredientsResponse>()
+            .all(&self.database_connection)
+            .await
+            .map(|x| x.into_iter().map(Into::into).collect())
+        //  select id, amount, unit, optional, ingredients.name as ingredient_name
+        //  from recipe_ingredients
+        //  inner join ingredients on recipe_ingredients.ingredient_id = ingredients.id
+        //  where recipes.id = '$recipe_id'
     }
 }
