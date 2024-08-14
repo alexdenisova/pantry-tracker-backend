@@ -4,9 +4,9 @@ services:
   nginx:
     image: nginx:1-alpine
     restart: always
-    # depends_on:
-    #   app:
-    #     condition: service_healthy
+    depends_on:
+      app:
+        condition: service_healthy
     environment:
       NGINX_PORT: "8080"
       ROOT_PATH: '/api'
@@ -23,8 +23,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # migrations:
-      #   condition: service_completed_successfully
+      migrations:
+        condition: service_completed_successfully
     build:
       context: .
       dockerfile: dev.dockerfile
@@ -53,21 +53,21 @@ services:
       - ./Cargo.lock:/app/Cargo.lock:ro
       - ./Cargo.toml:/app/Cargo.toml:ro
   
-  # migrations:
-  #   build:
-  #     context: .
-  #     dockerfile: dev.dockerfile
-  #   command: migrate
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   environment: *environment
-  #   volumes:
-  #     - ./crates:/app/crates:ro
-  #     - ./src:/app/src:ro
-  #     - ./target-dev:/app/target:rw
-  #     - ./Cargo.lock:/app/Cargo.lock:ro
-  #     - ./Cargo.toml:/app/Cargo.toml:ro
+  migrations:
+    build:
+      context: .
+      dockerfile: dev.dockerfile
+    command: migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: *environment
+    volumes:
+      - ./crates:/app/crates:ro
+      - ./src:/app/src:ro
+      - ./target-dev:/app/target:rw
+      - ./Cargo.lock:/app/Cargo.lock:ro
+      - ./Cargo.toml:/app/Cargo.toml:ro
   
   postgres:
     image: postgres:13-alpine
