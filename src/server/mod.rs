@@ -6,6 +6,7 @@ use axum::{extract::State, http::StatusCode, serve, Router};
 use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
 
+use crate::server::routes::ingredient_names::IngredientNameRouter;
 use crate::server::routes::login::LoginRouter;
 
 use self::routes::ingredients::IngredientRouter;
@@ -49,6 +50,7 @@ impl Server {
             .route("/health", get(health))
             .nest("/login", LoginRouter::get())
             .nest("/ingredients", IngredientRouter::get())
+            .nest("/ingredient_names", IngredientNameRouter::get())
             .nest("/pantry_items", PantryItemRouter::get())
             .nest("/parse_ingredients", ParseIngredientsRouter::get())
             .nest("/parse_recipe_link", ParsedRecipeLinkRouter::get())

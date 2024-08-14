@@ -43,7 +43,7 @@ impl RecipeIngredientRouter {
     ) -> (StatusCode, Json<Option<RecipeIngredientResponse>>) {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Ok(Some(user_id)) = state.get_sessions_user(session_id.value_trimmed()).await {
-                if let Err(err) = verified_user(&state, payload.recipe_id, user_id).await {
+                if let Err(err) = verified_user(&state, Some(payload.recipe_id), user_id).await {
                     return (err.into(), Json(None));
                 }
                 match state
@@ -190,25 +190,32 @@ impl RecipeIngredientRouter {
 
 async fn verified_user(
     state: &AppState,
-    recipe_id: Uuid,
+    recipe_id: Option<Uuid>,
     user_id: Uuid,
 ) -> Result<(), VerifyError> {
-    match state.db_client.get_recipe(recipe_id).await {
-        Ok(recipe) => {
-            if recipe.user_id == user_id {
-                log::info!("Got recipe with id {:?}", recipe.id);
-                return Ok(());
+    if let Ok(true) = state.user_is_admin(user_id).await {
+        return Ok(());
+    }
+    if let Some(recipe_id) = recipe_id {
+        match state.db_client.get_recipe(recipe_id).await {
+            Ok(recipe) => {
+                if recipe.user_id == user_id {
+                    log::info!("Got recipe with id {:?}", recipe.id);
+                    return Ok(());
+                }
+                Err(VerifyError::Unauthorized)
             }
-            Err(VerifyError::Unauthorized)
-        }
-        Err(err) => {
-            if let GetError::NotFound { .. } = err {
+            Err(err) => {
+                if let GetError::NotFound { .. } = err {
+                    log::error!("{}", err.to_string());
+                    return Err(VerifyError::NotFound);
+                }
                 log::error!("{}", err.to_string());
-                return Err(VerifyError::NotFound);
+                Err(VerifyError::InternalServerError)
             }
-            log::error!("{}", err.to_string());
-            Err(VerifyError::InternalServerError)
         }
+    } else {
+        Err(VerifyError::Unauthorized)
     }
 }
 
@@ -219,7 +226,7 @@ async fn get_recipe_ingredient(
 ) -> (StatusCode, Json<Option<RecipeIngredientResponse>>) {
     match state.db_client.get_recipe_ingredient(id).await {
         Ok(recipe_ingredient) => {
-            if let Err(err) = verified_user(state, recipe_ingredient.recipe_id, user_id).await {
+            if let Err(err) = verified_user(state, Some(recipe_ingredient.recipe_id), user_id).await {
                 return (err.into(), Json(None));
             }
             log::info!("Got recipe ingredient with id {:?}", recipe_ingredient.id);

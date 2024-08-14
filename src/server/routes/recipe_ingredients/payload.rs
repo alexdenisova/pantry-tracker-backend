@@ -48,13 +48,15 @@ impl From<UpdatePayload> for UpdateDto {
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct ListQueryParams {
-    pub recipe_id: Uuid,
+    pub recipe_id: Option<Uuid>,
+    pub ingredient_id: Option<Uuid>,
 }
 
 impl From<ListQueryParams> for ListParamsDto {
     fn from(val: ListQueryParams) -> Self {
         ListParamsDto {
-            recipe_id: Some(val.recipe_id),
+            recipe_id: val.recipe_id,
+            ingredient_id: val.ingredient_id,
         }
     }
 }

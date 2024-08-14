@@ -21,6 +21,7 @@ use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
 use payload::LoginPayload;
 
+const SESSION_TTL_DAYS: u16 = 7;
 pub struct LoginRouter {}
 
 impl LoginRouter {
@@ -34,7 +35,7 @@ impl LoginRouter {
         Json(payload): Json<LoginPayload>,
     ) -> Result<(CookieJar, Redirect), StatusCode> {
         let username = payload.username.clone();
-        let password = payload.password.clone();
+        let password = payload.password.clone().unwrap_or_default();
         match state.db_client.list_users(payload.into()).await {
             Ok(users) => {
                 if users.items.is_empty() {
@@ -92,7 +93,7 @@ async fn create_session(user_id: Uuid, redis_sender: &Sender<RedisCommand>) -> A
         .take(30)
         .map(char::from)
         .collect();
-    redis_sender.set(&session_id, &user_id.to_string()).await?;
+    redis_sender.set(&session_id, &user_id.to_string(), Some(SESSION_TTL_DAYS)).await?;
     log::info!("Session created");
     Ok(session_id)
 }
