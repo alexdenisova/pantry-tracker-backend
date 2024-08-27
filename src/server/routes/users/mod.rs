@@ -32,19 +32,11 @@ impl UserRouter {
 
     async fn create(
         State(state): State<AppState>,
-        jar: CookieJar,
         Json(payload): Json<CreatePayload>,
     ) -> Result<(StatusCode, Json<UserResponse>), AppError> {
-        if let Some(session_id) = jar.get(COOKIE_KEY) {
-            if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
-                if Some(true) != payload.admin || state.user_is_admin(user_id).await? {
-                    let user = state.db_client.create_user(payload.into()).await?;
-                    log::info!("User with id {:?} created", user.id.to_string());
-                    return Ok((StatusCode::CREATED, Json(user.into())));
-                };
-            }
-        }
-        Err(AppError::Unauthorized)
+        let user = state.db_client.create_user(payload.into()).await?;
+        log::info!("User with id {:?} created", user.id.to_string());
+        Ok((StatusCode::CREATED, Json(user.into())))
     }
 
     async fn list(
@@ -99,7 +91,7 @@ impl UserRouter {
     ) -> Result<(StatusCode, Json<UserResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
-                if Some(true) != payload.admin || state.user_is_admin(user_id).await? {
+                if user_id == id || state.user_is_admin(user_id).await? {
                     let user = state.db_client.update_user(id, payload.into()).await?;
                     log::info!("Updated user with id {id:?}");
                     return Ok((StatusCode::OK, Json(user.into())));

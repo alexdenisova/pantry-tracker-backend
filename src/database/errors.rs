@@ -1,6 +1,18 @@
 use color_eyre::Report as AnyError;
+use sea_orm::DbErr;
 use thiserror::Error;
 use uuid::Uuid;
+
+pub const UNIQUE_VIOLATION_CODE: &str = "23505";
+
+pub fn error_code(err: &DbErr) -> Option<String> {
+    if let DbErr::Query(sea_orm::error::RuntimeErr::SqlxError(err)) = err {
+        if let Some(err) = err.as_database_error() {
+            return err.code().map(|x| x.to_string());
+        }
+    }
+    None
+}
 
 #[derive(Error, Debug)]
 pub enum CreateError {
@@ -56,12 +68,3 @@ impl From<GetError> for UpdateError {
         }
     }
 }
-
-// impl From<GetError> for ListError {
-//     fn from(value: GetError) -> Self {
-//         match value {
-//             GetError::NotFound { id } => UpdateError::NotFound { id },
-//             GetError::Unexpected { id, error } => UpdateError::Unexpected { id, error },
-//         }
-//     }
-// }

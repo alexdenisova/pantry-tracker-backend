@@ -33,7 +33,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Users::Table)
                     .col(ColumnDef::new(Users::Id).uuid().primary_key())
-                    .col(ColumnDef::new(Users::Name).string().not_null())
+                    .col(ColumnDef::new(Users::Name).string().not_null().unique_key())
                     .col(ColumnDef::new(Users::PasswordHash).string().not_null())
                     .col(
                         ColumnDef::new(Users::Admin)

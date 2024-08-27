@@ -3,8 +3,8 @@ pub mod dto;
 use async_trait::async_trait;
 use chrono::Utc;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
-    QuerySelect, Select, Set,
+    ActiveModelTrait, ColumnTrait, DbErr, EntityTrait, IntoSimpleExpr, JoinType, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect, RelationTrait, Select, Set,
 };
 use uuid::Uuid;
 
@@ -13,11 +13,14 @@ use self::dto::{
 };
 
 use crate::database::dto::MetadataDto;
+use crate::database::errors::{error_code, UNIQUE_VIOLATION_CODE};
+use crate::database::recipe_ingredients::dto::RecipeIngredientJoinDto;
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
     DBClient,
 };
 use db_entities::recipe_ingredients::{ActiveModel, Column, Entity, Model};
+use migrations::{Expr, Func};
 
 #[async_trait]
 pub trait DatabaseCRUD {
@@ -55,7 +58,7 @@ impl DatabaseCRUD for DBClient {
             .insert(&self.database_connection)
             .await
             .map_err(|err| {
-                if let DbErr::RecordNotInserted = err {
+                if error_code(&err) == Some(UNIQUE_VIOLATION_CODE.to_owned()) {
                     CreateError::AlreadyExist { id }
                 } else {
                     CreateError::Unexpected { error: err.into() }
@@ -82,13 +85,11 @@ impl DatabaseCRUD for DBClient {
             items: list_entity(list_params)
                 .limit(list_params.limit)
                 .offset(list_params.offset)
-                .order_by_desc(Column::UpdatedAt)
+                .order_by_asc(db_entities::ingredients::Column::Name)
+                .into_model::<RecipeIngredientJoinDto>()
                 .all(&self.database_connection)
                 .await
-                .map_err(|err| ListError::Unexpected { error: err.into() })?
-                .into_iter()
-                .map(Into::into)
-                .collect(),
+                .map_err(|err| ListError::Unexpected { error: err.into() })?,
         })
     }
     async fn get_recipe_ingredients_metadata(
@@ -161,8 +162,35 @@ impl DatabaseCRUD for DBClient {
 }
 
 fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
-    match list_params.recipe_id {
+    let mut entity = match list_params.recipe_id {
         Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
         None => Entity::find(),
     }
+    .join(
+        JoinType::InnerJoin,
+        db_entities::recipe_ingredients::Relation::Recipes.def(),
+    )
+    .join(
+        JoinType::InnerJoin,
+        db_entities::recipe_ingredients::Relation::Ingredients.def(),
+    )
+    .column_as(db_entities::ingredients::Column::Name, "ingredient_name")
+    .column_as(db_entities::recipes::Column::Name, "recipe_name");
+    if let Some(value) = &list_params.name_contains {
+        entity = entity.filter(
+            Expr::expr(Func::lower(
+                db_entities::ingredients::Column::Name.into_simple_expr(),
+            ))
+            .like(format!("%{}%", value.to_lowercase())),
+        );
+    }
+    if let Some(user_id) = list_params.user_id {
+        entity = entity
+            .filter(db_entities::recipes::Column::UserId.eq(user_id))
+            .distinct_on([(
+                db_entities::ingredients::Entity,
+                db_entities::ingredients::Column::Name,
+            )]);
+    }
+    entity
 }

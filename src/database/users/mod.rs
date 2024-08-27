@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use self::dto::{CreateDto, UpdateDto, UserDto, UsersListDto};
 use crate::database::dto::MetadataDto;
+use crate::database::errors::{error_code, UNIQUE_VIOLATION_CODE};
 use crate::database::users::dto::ListParamsDto;
 use crate::database::{
     errors::{CreateError, DeleteError, GetError, ListError, UpdateError},
@@ -40,7 +41,7 @@ impl DatabaseCRUD for DBClient {
             .insert(&self.database_connection)
             .await
             .map_err(|err| {
-                if let DbErr::RecordNotInserted = err {
+                if error_code(&err) == Some(UNIQUE_VIOLATION_CODE.to_owned()) {
                     CreateError::AlreadyExist { id }
                 } else {
                     CreateError::Unexpected { error: err.into() }
