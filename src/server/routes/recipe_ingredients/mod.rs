@@ -7,15 +7,14 @@ use axum::{
     Router,
 };
 use axum_extra::extract::CookieJar;
-use color_eyre::eyre::eyre;
 use uuid::Uuid;
 
 use crate::server::routes::errors::{AppError, VerifyError};
 use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
 use payload::{
-    CreatePayload, ListQueryParams, RecipeIngredientListResponse, RecipeIngredientResponse,
-    UpdatePayload,
+    CreatePayload, ListQueryParams, RecipeIngredientJoinResponse, RecipeIngredientListResponse,
+    RecipeIngredientResponse, UpdatePayload,
 };
 
 pub struct RecipeIngredientRouter {}
@@ -64,17 +63,14 @@ impl RecipeIngredientRouter {
     ) -> Result<(StatusCode, Json<RecipeIngredientListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
-                if !state.user_is_admin(user_id).await? {
-                    if let Some(recipe_id) = query_params.recipe_id {
-                        verify_recipe_user(&state, recipe_id, user_id).await?;
-                    } else {
-                        return Err(AppError::Other {
-                            error: eyre!("recipe_id query parameter missing."),
-                        });
-                    }
-                }
-                let list_params = query_params.into();
-                let recipe_ingredients: Vec<RecipeIngredientResponse> = state
+                let user_id = if let Some(recipe_id) = query_params.recipe_id {
+                    verify_recipe_user(&state, recipe_id, user_id).await?;
+                    None
+                } else {
+                    Some(user_id)
+                };
+                let list_params = query_params.into_dto(user_id);
+                let recipe_ingredients: Vec<RecipeIngredientJoinResponse> = state
                     .db_client
                     .list_recipe_ingredients(&list_params)
                     .await?

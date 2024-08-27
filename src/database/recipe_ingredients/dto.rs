@@ -1,4 +1,5 @@
 use chrono::{NaiveDateTime, Utc};
+use sea_orm::FromQueryResult;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -16,6 +17,8 @@ pub struct CreateDto {
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
     pub recipe_id: Option<Uuid>,
+    pub user_id: Option<Uuid>,
+    pub name_contains: Option<String>,
     pub limit: u64,
     pub offset: u64,
 }
@@ -38,11 +41,6 @@ pub struct RecipeIngredientDto {
     pub optional: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-}
-
-#[derive(Serialize, Debug)]
-pub struct RecipeIngredientsListDto {
-    pub items: Vec<RecipeIngredientDto>,
 }
 
 impl From<CreateDto> for Model {
@@ -74,4 +72,23 @@ impl From<Model> for RecipeIngredientDto {
             updated_at: value.updated_at,
         }
     }
+}
+
+#[derive(Serialize, Debug, Clone, Eq, PartialEq, FromQueryResult)]
+pub struct RecipeIngredientJoinDto {
+    pub id: Uuid,
+    pub ingredient_id: Uuid,
+    pub ingredient_name: String,
+    pub recipe_id: Uuid,
+    pub recipe_name: String,
+    pub amount: Option<String>,
+    pub unit: Option<String>,
+    pub optional: bool,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+}
+
+#[derive(Serialize, Debug)]
+pub struct RecipeIngredientsListDto {
+    pub items: Vec<RecipeIngredientJoinDto>,
 }
