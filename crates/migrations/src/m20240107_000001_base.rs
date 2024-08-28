@@ -31,6 +31,27 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
+                    .table(Categories::Table)
+                    .col(ColumnDef::new(Categories::Id).uuid().primary_key())
+                    .col(
+                        ColumnDef::new(Categories::Name)
+                            .string()
+                            .not_null()
+                            .unique_key(),
+                    )
+                    .col(
+                        ColumnDef::new(Categories::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_table(
+                Table::create()
                     .table(Users::Table)
                     .col(ColumnDef::new(Users::Id).uuid().primary_key())
                     .col(ColumnDef::new(Users::Name).string().not_null().unique_key())
@@ -214,6 +235,53 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        manager
+            .create_table(
+                Table::create()
+                    .table(RecipeCategories::Table)
+                    .col(
+                        ColumnDef::new(RecipeCategories::Id)
+                            .uuid()
+                            .unique_key()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(RecipeCategories::RecipeId).uuid().not_null())
+                    .col(
+                        ColumnDef::new(RecipeCategories::CategoryId)
+                            .uuid()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(RecipeCategories::CreatedAt)
+                            .timestamp()
+                            .not_null()
+                            .default(SimpleExpr::Keyword(Keyword::CurrentTimestamp)),
+                    )
+                    .primary_key(
+                        Index::create()
+                            .col(RecipeCategories::CategoryId)
+                            .col(RecipeCategories::RecipeId),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from_tbl(RecipeCategories::Table)
+                            .from_col(RecipeCategories::CategoryId)
+                            .to_tbl(Categories::Table)
+                            .to_col(Categories::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .from_tbl(RecipeCategories::Table)
+                            .from_col(RecipeCategories::RecipeId)
+                            .to_tbl(Recipes::Table)
+                            .to_col(Recipes::Id)
+                            .on_delete(ForeignKeyAction::Cascade),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -223,6 +291,9 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(RecipeIngredients::Table).to_owned())
             .await?;
         manager
+            .drop_table(Table::drop().table(RecipeCategories::Table).to_owned())
+            .await?;
+        manager
             .drop_table(Table::drop().table(Recipes::Table).to_owned())
             .await?;
         manager
@@ -230,6 +301,9 @@ impl MigrationTrait for Migration {
             .await?;
         manager
             .drop_table(Table::drop().table(Ingredients::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Categories::Table).to_owned())
             .await?;
         manager
             .drop_table(Table::drop().table(Users::Table).to_owned())
@@ -245,6 +319,14 @@ pub enum Ingredients {
     Name,
     CreatedAt,
     // InSeason,
+}
+
+#[derive(Iden)]
+pub enum Categories {
+    Table,
+    Id,
+    Name,
+    CreatedAt,
 }
 
 #[derive(Iden)]
@@ -285,6 +367,15 @@ pub enum RecipeIngredients {
     Optional,
     CreatedAt,
     UpdatedAt,
+}
+
+#[derive(Iden)]
+pub enum RecipeCategories {
+    Table,
+    Id,
+    RecipeId,
+    CategoryId,
+    CreatedAt,
 }
 
 #[derive(Iden)]
