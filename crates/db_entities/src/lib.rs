@@ -2,8 +2,10 @@
 
 pub mod prelude;
 
+pub mod categories;
 pub mod ingredients;
 pub mod pantry_items;
+pub mod recipe_categories;
 pub mod recipe_ingredients;
 pub mod recipes;
 pub mod users;
