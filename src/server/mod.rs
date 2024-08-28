@@ -1,13 +1,15 @@
+mod payload;
 pub mod routes;
 mod state;
-mod payload;
 
 use axum::routing::get;
 use axum::{extract::State, http::StatusCode, serve, Router};
 use thiserror::Error;
 use tokio::net::{TcpListener, ToSocketAddrs};
 
+use crate::server::routes::categories::CategoryRouter;
 use crate::server::routes::login::LoginRouter;
+use crate::server::routes::recipe_categories::RecipeCategoryRouter;
 
 use self::routes::ingredients::IngredientRouter;
 use self::routes::pantry_items::PantryItemRouter;
@@ -48,11 +50,13 @@ impl Server {
         let router: Router = Router::new()
             .route("/health", get(health))
             .nest("/login", LoginRouter::router())
+            .nest("/categories", CategoryRouter::router())
             .nest("/ingredients", IngredientRouter::router())
             .nest("/pantry_items", PantryItemRouter::router())
             .nest("/parse_ingredients", ParseIngredientsRouter::router())
             .nest("/parse_recipe_link", ParsedRecipeLinkRouter::router())
             .nest("/recipes", RecipeRouter::router())
+            .nest("/recipe_categories", RecipeCategoryRouter::router())
             .nest("/recipe_ingredients", RecipeIngredientRouter::router())
             .nest("/users", UserRouter::router())
             .with_state(self.state)

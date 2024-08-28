@@ -82,12 +82,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(PantryItems::Table)
                     .col(ColumnDef::new(PantryItems::Id).uuid().primary_key())
-                    .col(
-                        ColumnDef::new(PantryItems::IngredientId)
-                            .uuid()
-                            .not_null()
-                            .unique_key(),
-                    )
+                    .col(ColumnDef::new(PantryItems::IngredientId).uuid().not_null())
                     .col(ColumnDef::new(PantryItems::ExpirationDate).date())
                     .col(ColumnDef::new(PantryItems::Quantity).integer())
                     .col(ColumnDef::new(PantryItems::WeightGrams).integer())

@@ -1,7 +1,9 @@
+pub mod categories;
 pub mod dto;
 pub mod errors;
 pub mod ingredients;
 pub mod pantry_items;
+pub mod recipe_categories;
 pub mod recipe_ingredients;
 pub mod recipes;
 pub mod users;
@@ -39,8 +41,10 @@ impl DBHealth for DBClient {
 
 pub trait DBTrait:
     DBHealth
+    + categories::DatabaseCRUD
     + ingredients::DatabaseCRUD
     + pantry_items::DatabaseCRUD
+    + recipe_categories::DatabaseCRUD
     + recipe_ingredients::DatabaseCRUD
     + recipes::DatabaseCRUD
     + users::DatabaseCRUD

@@ -148,5 +148,17 @@ pub async fn migrate_test_data(client: impl DBTrait + Send + Sync) -> AnyResult<
         })
         .await?;
 
+    let dinner_category = client
+        .create_category(crate::database::categories::dto::CreateDto {
+            name: "Dinner".to_owned(),
+        })
+        .await?;
+    client
+        .create_recipe_category(crate::database::recipe_categories::dto::CreateDto {
+            recipe_id: chicken_rice_recipe.id,
+            category_id: dinner_category.id,
+        })
+        .await?;
+
     Ok(())
 }
