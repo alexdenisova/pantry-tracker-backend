@@ -127,6 +127,7 @@ fn join(entity: Select<Entity>) -> Select<Entity> {
             db_entities::recipe_categories::Relation::Categories.def(),
         )
         .column_as(db_entities::categories::Column::Name, "category_name")
+        .column_as(db_entities::recipes::Column::UserId, "user_id")
 }
 
 fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
