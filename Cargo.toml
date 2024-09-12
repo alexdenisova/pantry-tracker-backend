@@ -1,6 +1,6 @@
 [package]
 name = "pantry-tracker"
-version = "24.8.2"
+version = "24.8.3"
 edition = "2021"
 
 [[bin]]
