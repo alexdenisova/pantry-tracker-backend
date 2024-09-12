@@ -5,7 +5,7 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::database::recipes::dto::{
-    CreateDto, ListParamsDto, ListRecipeJoinParamsDto, RecipeDto, RecipesListDto, UpdateDto
+    CreateDto, ListParamsDto, ListRecipeJoinParamsDto, RecipeDto, RecipesListDto, UpdateDto,
 };
 use crate::server::payload::{MetadataResponse, DEFAULT_PER_PAGE};
 
@@ -75,6 +75,7 @@ pub struct ListQueryParams {
     pub name_contains: Option<String>,
     pub total_time_mins: Option<i32>,
     pub ingredient_ids: Option<String>, // urlencoded array of ingredient_ids
+    pub category_ids: Option<String>,   // urlencoded array of category_ids
     pub page: Option<u64>,
     pub per_page: Option<u64>,
 }
@@ -89,10 +90,16 @@ impl ListQueryParams {
             offset: self.per_page.unwrap_or(DEFAULT_PER_PAGE) * (self.page.unwrap_or(1) - 1),
         }
     }
-    pub fn into_join_dto(self, user_id: Uuid, ingredient_ids: Vec<Uuid>) -> ListRecipeJoinParamsDto {
+    pub fn into_join_dto(
+        self,
+        user_id: Uuid,
+        ingredient_ids: Option<Vec<Uuid>>,
+        category_ids: Option<Vec<Uuid>>,
+    ) -> ListRecipeJoinParamsDto {
         ListRecipeJoinParamsDto {
             user_id,
             ingredient_ids,
+            category_ids,
             limit: self.per_page.unwrap_or(DEFAULT_PER_PAGE),
             offset: self.per_page.unwrap_or(DEFAULT_PER_PAGE) * (self.page.unwrap_or(1) - 1),
         }

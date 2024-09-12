@@ -204,14 +204,23 @@ fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
 }
 
 fn list_join_entity(list_params: &ListRecipeJoinParamsDto) -> Select<Entity> {
-    Entity::find()
+    let mut entity = Entity::find()
         .join(
             JoinType::InnerJoin,
             db_entities::recipes::Relation::RecipeIngredients.def(),
         )
-        .filter(Column::UserId.eq(list_params.user_id))
-        .filter(
-            db_entities::recipe_ingredients::Column::IngredientId
-                .is_in(list_params.ingredient_ids.clone()),
+        .join(
+            JoinType::InnerJoin,
+            db_entities::recipe_categories::Relation::Recipes.def(),
         )
+        .filter(Column::UserId.eq(list_params.user_id));
+    if let Some(ids) = &list_params.ingredient_ids {
+        entity =
+            entity.filter(db_entities::recipe_ingredients::Column::IngredientId.is_in(ids.clone()));
+    }
+    if let Some(ids) = &list_params.category_ids {
+        entity =
+            entity.filter(db_entities::recipe_categories::Column::CategoryId.is_in(ids.clone()));
+    }
+    entity
 }

@@ -31,7 +31,8 @@ pub struct ListParamsDto {
 #[derive(Deserialize, Debug, Default)]
 pub struct ListRecipeJoinParamsDto {
     pub user_id: Uuid,
-    pub ingredient_ids: Vec<Uuid>,
+    pub ingredient_ids: Option<Vec<Uuid>>,
+    pub category_ids: Option<Vec<Uuid>>,
     pub limit: u64,
     pub offset: u64,
 }

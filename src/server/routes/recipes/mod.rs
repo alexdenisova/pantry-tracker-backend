@@ -9,10 +9,10 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use color_eyre::eyre::eyre;
 use payload::{CreatePayload, ListQueryParams, RecipeListResponse, RecipeResponse, UpdatePayload};
-use urlencoding::decode;
 
 use crate::database::errors::ListError;
 use crate::server::routes::errors::{AppError, VerifyError};
+use crate::server::routes::utils::decode_uuid_list_param;
 use crate::server::routes::COOKIE_KEY;
 use crate::server::state::AppState;
 use uuid::Uuid;
@@ -144,9 +144,9 @@ async fn list_recipes_containing_ingredients(
     user_id: Uuid,
     query_params: ListQueryParams,
 ) -> Result<RecipeListResponse, ListError> {
-    if let Ok(ingredient_ids) = decode(&query_params.ingredient_ids.clone().unwrap()) {
-        if let Ok(ingredient_ids) = serde_json::from_str::<Vec<Uuid>>(&ingredient_ids) {
-            let list_params = query_params.into_join_dto(user_id, ingredient_ids);
+    if let Ok(ingredient_ids) = decode_uuid_list_param(&query_params.ingredient_ids) {
+        if let Ok(category_ids) = decode_uuid_list_param(&query_params.category_ids) {
+            let list_params = query_params.into_join_dto(user_id, ingredient_ids, category_ids);
             let recipes: Vec<RecipeResponse> = state
                 .db_client
                 .list_recipes_join(&list_params)
@@ -162,6 +162,9 @@ async fn list_recipes_containing_ingredients(
                 .into();
             return Ok(RecipeListResponse::from(recipes, metadata));
         }
+        return Err(ListError::Unprocessable {
+            error: eyre!("category_ids must be list of uuids seperated by commas."),
+        });
     }
     Err(ListError::Unprocessable {
         error: eyre!("ingredient_ids must be list of uuids seperated by commas."),
