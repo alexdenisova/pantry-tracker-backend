@@ -84,7 +84,6 @@ impl ListQueryParams {
     pub fn into_dto(self, user_id: Uuid) -> ListParamsDto {
         ListParamsDto {
             name_contains: self.name_contains,
-            total_time_mins: self.total_time_mins,
             user_id: Some(user_id),
             limit: self.per_page.unwrap_or(DEFAULT_PER_PAGE),
             offset: self.per_page.unwrap_or(DEFAULT_PER_PAGE) * (self.page.unwrap_or(1) - 1),
@@ -100,6 +99,8 @@ impl ListQueryParams {
             user_id,
             ingredient_ids,
             category_ids,
+            name_contains: self.name_contains,
+            total_time_mins: self.total_time_mins,
             limit: self.per_page.unwrap_or(DEFAULT_PER_PAGE),
             offset: self.per_page.unwrap_or(DEFAULT_PER_PAGE) * (self.page.unwrap_or(1) - 1),
         }

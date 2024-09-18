@@ -1,9 +1,10 @@
 pub mod dto;
 
 use async_trait::async_trait;
+use migrations::{Expr, Func};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, JoinType, PaginatorTrait, QueryFilter, QueryOrder,
-    QuerySelect, RelationTrait, Select,
+    ActiveModelTrait, ColumnTrait, EntityTrait, IntoSimpleExpr, JoinType, PaginatorTrait,
+    QueryFilter, QueryOrder, QuerySelect, RelationTrait, Select,
 };
 use uuid::Uuid;
 
@@ -136,6 +137,14 @@ fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
         None => Entity::find(),
     };
     entity = join(entity);
+    if let Some(value) = &list_params.name_contains {
+        entity = entity.filter(
+            Expr::expr(Func::lower(
+                db_entities::categories::Column::Name.into_simple_expr(),
+            ))
+            .like(format!("%{}%", value.to_lowercase())),
+        );
+    }
     if let Some(value) = list_params.category_id {
         entity = entity.filter(Column::CategoryId.eq(value));
     }

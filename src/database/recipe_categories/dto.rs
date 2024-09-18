@@ -16,6 +16,7 @@ pub struct ListParamsDto {
     pub recipe_id: Option<Uuid>,
     pub category_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
+    pub name_contains: Option<String>,
     pub limit: u64,
     pub offset: u64,
 }

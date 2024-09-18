@@ -26,6 +26,7 @@ impl From<CreatePayload> for CreateDto {
 pub struct ListQueryParams {
     pub recipe_id: Option<Uuid>,
     pub category_id: Option<Uuid>,
+    pub name_contains: Option<String>,
     pub page: Option<u64>,
     pub per_page: Option<u64>,
 }
@@ -36,6 +37,7 @@ impl ListQueryParams {
             recipe_id: self.recipe_id,
             category_id: self.category_id,
             user_id: Some(user_id),
+            name_contains: self.name_contains,
             limit: self.per_page.unwrap_or(DEFAULT_PER_PAGE),
             offset: self.per_page.unwrap_or(DEFAULT_PER_PAGE) * (self.page.unwrap_or(1) - 1),
         }

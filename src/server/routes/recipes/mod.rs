@@ -56,9 +56,11 @@ impl RecipeRouter {
     ) -> Result<(StatusCode, Json<RecipeListResponse>), AppError> {
         if let Some(session_id) = jar.get(COOKIE_KEY) {
             if let Some(user_id) = state.get_sessions_user(session_id.value_trimmed()).await? {
-                let ingredient_ids = query_params.ingredient_ids.clone();
-                let recipes = if ingredient_ids.is_some() {
-                    list_recipes_containing_ingredients(state, user_id, query_params).await?
+                let recipes = if query_params.ingredient_ids.is_some()
+                    || query_params.category_ids.is_some()
+                {
+                    list_recipes_with_ingredients_and_categories(state, user_id, query_params)
+                        .await?
                 } else {
                     let list_params = query_params.into_dto(user_id);
                     let recipes = state.db_client.list_recipes(&list_params).await?.into();
@@ -139,7 +141,7 @@ async fn verify_user(state: &AppState, recipe_id: Uuid, user_id: Uuid) -> Result
     Err(VerifyError::Unauthorized)
 }
 
-async fn list_recipes_containing_ingredients(
+async fn list_recipes_with_ingredients_and_categories(
     state: AppState,
     user_id: Uuid,
     query_params: ListQueryParams,

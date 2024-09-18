@@ -194,9 +194,6 @@ fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
                 .like(format!("%{}%", value.to_lowercase())),
         );
     }
-    if let Some(value) = list_params.total_time_mins {
-        entity = entity.filter(Column::TotalTimeMins.lte(value));
-    }
     if let Some(value) = list_params.user_id {
         entity = entity.filter(Column::UserId.eq(value));
     }
@@ -211,7 +208,7 @@ fn list_join_entity(list_params: &ListRecipeJoinParamsDto) -> Select<Entity> {
         )
         .join(
             JoinType::InnerJoin,
-            db_entities::recipe_categories::Relation::Recipes.def(),
+            db_entities::recipes::Relation::RecipeCategories.def(),
         )
         .filter(Column::UserId.eq(list_params.user_id));
     if let Some(ids) = &list_params.ingredient_ids {
@@ -221,6 +218,15 @@ fn list_join_entity(list_params: &ListRecipeJoinParamsDto) -> Select<Entity> {
     if let Some(ids) = &list_params.category_ids {
         entity =
             entity.filter(db_entities::recipe_categories::Column::CategoryId.is_in(ids.clone()));
+    }
+    if let Some(value) = &list_params.name_contains {
+        entity = entity.filter(
+            Expr::expr(Func::lower(Expr::col(Column::Name)))
+                .like(format!("%{}%", value.to_lowercase())),
+        );
+    }
+    if let Some(value) = list_params.total_time_mins {
+        entity = entity.filter(Column::TotalTimeMins.lte(value));
     }
     entity
 }

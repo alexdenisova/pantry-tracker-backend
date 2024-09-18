@@ -22,7 +22,6 @@ pub struct CreateDto {
 #[derive(Deserialize, Debug, Default)]
 pub struct ListParamsDto {
     pub name_contains: Option<String>,
-    pub total_time_mins: Option<i32>,
     pub user_id: Option<Uuid>,
     pub limit: u64,
     pub offset: u64,
@@ -33,6 +32,8 @@ pub struct ListRecipeJoinParamsDto {
     pub user_id: Uuid,
     pub ingredient_ids: Option<Vec<Uuid>>,
     pub category_ids: Option<Vec<Uuid>>,
+    pub name_contains: Option<String>,
+    pub total_time_mins: Option<i32>,
     pub limit: u64,
     pub offset: u64,
 }
