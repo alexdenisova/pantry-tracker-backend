@@ -165,8 +165,11 @@ fn list_entity(list_params: &ListParamsDto) -> Select<Entity> {
     let mut entity = match list_params.recipe_id {
         Some(value) => Entity::find().filter(Column::RecipeId.eq(value)),
         None => Entity::find(),
+    };
+    if let Some(ingredient_id) = list_params.ingredient_id {
+        entity = entity.filter(Column::IngredientId.eq(ingredient_id))
     }
-    .join(
+    entity = entity.join(
         JoinType::InnerJoin,
         db_entities::recipe_ingredients::Relation::Recipes.def(),
     )

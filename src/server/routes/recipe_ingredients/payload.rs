@@ -61,6 +61,7 @@ impl ListQueryParams {
     pub fn into_dto(self, user_id: Option<Uuid>) -> ListParamsDto {
         ListParamsDto {
             recipe_id: self.recipe_id,
+            ingredient_id: self.ingredient_id,
             user_id,
             name_contains: self.name_contains,
             limit: self.per_page.unwrap_or(DEFAULT_PER_PAGE),
